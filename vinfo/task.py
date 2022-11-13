@@ -344,7 +344,7 @@ class SentenceClassificationTask(TokenClassificationTask):
         return labels
 
 
-class ParseTask:
+class ParseTask(InitYAMLObject):
 
     yaml_tag = '!ParseTask'
     """Abstract class representing a linguistic task mapping texts to labels."""
@@ -357,11 +357,85 @@ class ParseTask:
         """
         raise NotImplementedError
 
+    def __init__(self, args, task_name, input_fields, cache=None):
+        """
+        Args:
+         - task_name: the string identifier for the task.
+                      e.g., the field name in the ontonotes
+                      annotation that provides labels for this task
+        """
+        self.task_name = task_name
+        # self.name_to_index_dict = {name:i for i, name in enumerate(args['input_fields'])}
+        self.label_vocab = {'[PAD]': 0, '-': 0, '_': 0}
+        self.ints_to_strings = {}
+        # self.cache = cache
+        self.cache = None
+        self.input_fields = input_fields
+        self.task_name = task_name
+        self.name_to_index_dict = None
+
+    def setup_cache(self):
+        """Constructs reader of or writer to disk cache
+
+        If cache is exists and is valid, constructs a reader of the cache,
+        otherwise constructs a writer to cache features as they're constructed
+        """
+        train_cache_path = self.cache.get_cache_path_and_check(
+            TRAIN_STR, self.task_name)
+        dev_cache_path = self.cache.get_cache_path_and_check(
+            DEV_STR, self.task_name)
+        test_cache_path = self.cache.get_cache_path_and_check(
+            TEST_STR, self.task_name)
+
+        self.train_cache_writer = None
+        self.dev_cache_writer = None
+        self.test_cache_writer = None
+
+        if os.path.exists(train_cache_path):
+            f = h5py.File(train_cache_path, 'r')
+            self.train_cache = (torch.tensor(f[str(i)][()])
+                                for i in range(len(f.keys())))
+        else:
+            self.train_cache_writer = h5py.File(train_cache_path, 'w')
+        if os.path.exists(dev_cache_path):
+            f2 = h5py.File(dev_cache_path, 'r')
+            self.dev_cache = (torch.tensor(f2[str(i)][()])
+                              for i in range(len(f2.keys())))
+        else:
+            self.dev_cache_writer = h5py.File(dev_cache_path, 'w')
+        if os.path.exists(test_cache_path):
+            f3 = h5py.File(test_cache_path, 'r')
+            self.test_cache = (torch.tensor(f3[str(i)][()])
+                               for i in range(len(f3.keys())))
+        else:
+            self.test_cache_writer = h5py.File(test_cache_path, 'w')
+
 
 class ParseDistanceTask(ParseTask):
 
     yaml_tag = '!ParseDistanceTask'
     """Maps observations to dependency parse distances between words."""
+    train_cache = None
+    dev_cache = None
+    test_cache = None
+
+    def __init__(self, args, task_name, input_fields, cache=None):
+        """
+        Args:
+         - task_name: the string identifier for the task.
+                      e.g., the field name in the ontonotes
+                      annotation that provides labels for this task
+        """
+        self.task_name = task_name
+        # self.name_to_index_dict = {name:i for i, name in enumerate(args['input_fields'])}
+        self.label_vocab = {'[PAD]': 0, '-': 0, 'O': 1, '_': 0}
+        # self.cache = cache
+        self.cache = None
+        self.input_fields = input_fields
+        self.task_name = task_name
+        self.name_to_index_dict = None
+        self.ints_to_strings = {}
+
 
     @staticmethod
     def labels(observation):

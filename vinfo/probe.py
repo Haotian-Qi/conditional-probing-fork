@@ -191,7 +191,7 @@ class TwoWordPSDProbe(Probe):
     For a batch of sentences, computes all n^2 pairs of distances
     for each sentence in the batch.
     """
-
+    yaml_tag = '!TwoWordPSDProbe'
     def __init__(self, args, model_dim, label_space_size):
         print('Constructing TwoWordPSDProbe')
         super(TwoWordPSDProbe, self).__init__()
@@ -227,7 +227,7 @@ class TwoWordPSDProbe(Probe):
 
 class OneWordPSDProbe(Probe):
     """ Computes squared L2 norm of words after projection by a matrix."""
-
+    yaml_tag = '!OneWordPSDProbe'
     def __init__(self, args, model_dim, label_space_size):
         print('Constructing OneWordPSDProbe')
         super(OneWordPSDProbe, self).__init__()

@@ -190,7 +190,7 @@ class NERReporter(IndependentLabelReporter):
 
 class WordPairReporter(Reporter):
     """Reporting class for wordpair (distance) tasks"""
-
+    yaml_tag = '!WordPairReporter'
     def __init__(self, args):
         self.args = args
         self.reporting_methods = args['reporting']['reporting_methods']

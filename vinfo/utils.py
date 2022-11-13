@@ -4,6 +4,8 @@ from the configuration specification
 """
 from yaml import YAMLObject
 
+import logging
+
 IGNORE_LABEL_INDEX = -100
 TRAIN_STR = 'train'
 DEV_STR = 'dev'
@@ -29,6 +31,9 @@ class InitYAMLObject(YAMLObject):
     """
     Convert a representation node to a Python object.
     """
+    logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+    logging.warning(type(node))
+    print(node)
     arg_dict = loader.construct_mapping(node, deep=True)
     print('Constructing', cls)
     return cls(**arg_dict)
