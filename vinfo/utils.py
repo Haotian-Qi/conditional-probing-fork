@@ -31,9 +31,6 @@ class InitYAMLObject(YAMLObject):
     """
     Convert a representation node to a Python object.
     """
-    logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
-    logging.warning(type(node))
-    print(node)
     arg_dict = loader.construct_mapping(node, deep=True)
     print('Constructing', cls)
     return cls(**arg_dict)
