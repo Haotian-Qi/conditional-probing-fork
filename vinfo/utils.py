@@ -4,6 +4,8 @@ from the configuration specification
 """
 from yaml import YAMLObject
 
+import logging
+
 IGNORE_LABEL_INDEX = -100
 TRAIN_STR = 'train'
 DEV_STR = 'dev'

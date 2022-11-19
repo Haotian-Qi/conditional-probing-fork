@@ -119,7 +119,8 @@ class TokenClassificationTask(InitYAMLObject):
       for the task specified by self.task_name
     """
     self._manual_setup()
-
+    
+    sentence_length = len(sentence)
     if self.cache is None:
       labels = self._labels_of_sentence(sentence, split)
       return labels
@@ -328,3 +329,222 @@ class SentenceClassificationTask(TokenClassificationTask):
     labels[0] = self.category_int_of_label_string(sentence[0][self.name_to_index_dict['label']]) #
     return labels
 
+# class ParseTask(InitYAMLObject):
+#   yaml_tag = '!ParseTask'
+#   def __init__(self, args, task_name, input_fields, cache=None):
+#     """
+#     Args:
+#      - task_name: the string identifier for the task.
+#                   e.g., the field name in the ontonotes
+#                   annotation that provides labels for this task
+#     """
+#     self.task_name = task_name
+#     #self.name_to_index_dict = {name:i for i, name in enumerate(args['input_fields'])}
+#     self.label_vocab = {'[PAD]':0, '-':0, '_':0}
+#     self.ints_to_strings = {}
+#     #self.cache = cache
+#     self.cache = None
+#     self.input_fields = input_fields
+#     self.task_name = task_name
+#     self.name_to_index_dict = None
+
+class ParseDistanceTask(InitYAMLObject):
+  """Maps observations to dependency parse distances between words."""
+  yaml_tag = '!ParseDistanceTask'
+
+  def __init__(self, args, input_fields, cache=None):
+    #self.name_to_index_dict = {name:i for i, name in enumerate(args['input_fields'])}
+    self.label_vocab = {'[PAD]':0, '-':0, '_':0}
+    self.ints_to_strings = {}
+    #self.cache = cache
+    self.cache = None
+    self.input_fields = input_fields
+    self.name_to_index_dict = None
+
+  def setup_cache(self):
+    """Constructs reader of or writer to disk cache
+
+    If cache is exists and is valid, constructs a reader of the cache,
+    otherwise constructs a writer to cache features as they're constructed
+    """
+    train_cache_path = self.cache.get_cache_path_and_check(TRAIN_STR)
+    dev_cache_path = self.cache.get_cache_path_and_check(DEV_STR)
+    test_cache_path = self.cache.get_cache_path_and_check(TEST_STR)
+
+    self.train_cache_writer = None
+    self.dev_cache_writer = None
+    self.test_cache_writer = None
+
+    if os.path.exists(train_cache_path):
+      f = h5py.File(train_cache_path, 'r')
+      self.train_cache = (torch.tensor(f[str(i)][()]) for i in range(len(f.keys())))
+    else:
+      self.train_cache_writer = h5py.File(train_cache_path, 'w')
+    if os.path.exists(dev_cache_path):
+      f2 = h5py.File(dev_cache_path, 'r')
+      self.dev_cache = (torch.tensor(f2[str(i)][()]) for i in range(len(f2.keys())))
+    else:
+      self.dev_cache_writer = h5py.File(dev_cache_path, 'w')
+    if os.path.exists(test_cache_path):
+      f3 = h5py.File(test_cache_path, 'r')
+      self.test_cache = (torch.tensor(f3[str(i)][()]) for i in range(len(f3.keys())))
+    else:
+      self.test_cache_writer = h5py.File(test_cache_path, 'w')
+
+  def _manual_setup(self):
+    """ Handles initialization not done in __init__ because of the YAML constructor
+
+    Done when labels_of_sentence is called, but if (for testing) another function is
+    called, there may be extra setup to be done. (Not done in init because the yaml
+    constructor doesn't guarantee that all arguments will be present)
+    """
+    # If self.cache is None, then all caching should be skipped
+    if self.name_to_index_dict is None:
+      self.name_to_index_dict = {name:i for i, name in enumerate(self.input_fields)}
+      if self.cache is not None:
+        self.setup_cache()
+
+  def _labels_of_sentence(self, sentence, split):  
+    """Computes the distances between all pairs of words; returns them as a torch tensor.
+
+    Args:
+      observation: a single Observation class for a sentence:
+    Returns:
+      A torch tensor of shape (sentence_length, sentence_length) of distances
+      in the parse tree as specified by the observation annotation.
+    """
+    self._manual_setup()
+    sentence_length = len(sentence) #All observation fields must be of same length
+    distances = torch.zeros((sentence_length, sentence_length))
+    # for i in range(len(observation.head_indices)): print(i+1, observation.head_indices[i])
+    for i in range(sentence_length):
+      # print(i)
+      for j in range(i,sentence_length):
+        # print(j)
+        i_j_distance = ParseDistanceTask.distance_between_pairs(sentence, i, j)
+        distances[i][j] = i_j_distance
+        distances[j][i] = i_j_distance
+    return distances
+
+  def distance_between_pairs(sentence, i, j, head_indices=None):
+    '''Computes path distance between a pair of words
+
+    TODO: It would be (much) more efficient to compute all pairs' distances at once;
+          this pair-by-pair method is an artefact of an older design, but
+          was unit-tested for correctness...
+
+    Args:
+      observation: an Observation namedtuple, with a head_indices field.
+          or None, if head_indies != None
+      i: one of the two words to compute the distance between.
+      j: one of the two words to compute the distance between.
+      head_indices: the head indices (according to a dependency parse) of all
+          words, or None, if observation != None.
+
+    Returns:
+      The integer distance d_path(i,j)
+    '''
+    # head_list = [x[6] if x[6] is not '_' else 0 for x in sentence]
+    head_list = [x[6] for x in sentence]
+    if i == j:
+      return 0
+    if sentence:
+      head_indices = []
+      number_of_underscores = 0
+      for elt in head_list:
+        if elt == '_':
+          head_indices.append(0)
+          number_of_underscores += 1
+        else:
+          head_indices.append(int(elt) + number_of_underscores)
+
+    i_path = [i+1]
+    j_path = [j+1]
+    i_head = i+1
+    j_head = j+1
+    n = 60
+    i_path_length, j_path_length = 0,0
+    while True and n > 0:
+      n -= 1
+      if not (i_head == 0 and (i_path == [i+1] or i_path[-1] == 0)):
+        i_head = head_indices[i_head - 1]
+        i_path.append(i_head)
+        # print("Appending to i_path:", i_head)
+      if not (j_head == 0 and (j_path == [j+1] or j_path[-1] == 0)):
+        j_head = head_indices[j_head - 1]
+        j_path.append(j_head)
+        # print("Appending to j_path:", j_head)
+      if i_head in j_path:
+        j_path_length = j_path.index(i_head)
+        i_path_length = len(i_path) - 1
+        break
+      elif j_head in i_path:
+        i_path_length = i_path.index(j_head)
+        j_path_length = len(j_path) - 1
+        break
+      elif i_head == j_head:
+        i_path_length = len(i_path) - 1
+        j_path_length = len(j_path) - 1
+        break
+    try:
+      total_length = j_path_length + i_path_length
+    except:
+      raise AssertionError
+
+    return total_length
+
+class ParseDepthTask(InitYAMLObject):
+  """Maps observations to a depth in the parse tree for each word"""
+  yaml_tag = '!ParseDepthTask'
+
+  def __init__(self, args, input_fields, cache=None):
+    self.ints_to_strings = {}
+
+  def _labels_of_sentence(self, sentence, split):
+    """Computes the depth of each word; returns them as a torch tensor.
+
+    Args:
+      observation: a single Observation class for a sentence:
+    Returns:
+      A torch tensor of shape (sentence_length,) of depths
+      in the parse tree as specified by the observation annotation.
+    """
+    sentence_length = len(sentence) #All observation fields must be of same length
+    depths = torch.zeros(sentence_length)
+    for i in range(sentence_length):
+      depths[i] = ParseDepthTask.get_ordering_index(sentence, i)
+    return depths
+
+
+  def get_ordering_index(sentence, i, head_indices=None):
+    '''Computes tree depth for a single word in a sentence
+
+    Args:
+      observation: an Observation namedtuple, with a head_indices field.
+          or None, if head_indies != None
+      i: the word in the sentence to compute the depth of
+      head_indices: the head indices (according to a dependency parse) of all
+          words, or None, if observation != None.
+
+    Returns:
+      The integer depth in the tree of word i
+    '''
+    head_list = [x[6] for x in sentence]
+    if sentence:
+      head_indices = []
+      number_of_underscores = 0
+      for elt in head_list:
+        if elt == '_':
+          head_indices.append(0)
+          number_of_underscores += 1
+        else:
+          head_indices.append(int(elt) + number_of_underscores)
+    length = 0
+    i_head = i+1
+    n = 60
+    while True and n > 0:
+      i_head = head_indices[i_head - 1]
+      if i_head != 0:
+        length += 1
+      else:
+        return length

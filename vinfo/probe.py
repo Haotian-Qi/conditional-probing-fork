@@ -138,7 +138,6 @@ class SentenceLinearLabelProbe(Probe):
     batch = self.linear(batch)
     return batch
 
-
 class SentenceMLPLabelProbe(Probe):
   """ Computes a linear function of pairs of vectors.
 
@@ -176,3 +175,36 @@ class SentenceMLPLabelProbe(Probe):
       batch = torch.zeros_like(batch)
     batch = self.linear2(torch.nn.functional.gelu(self.linear(batch)))
     return batch
+#####################
+# Structure Probe
+#####################
+class OneWordNonPSDProbe(Probe):
+  """ Computes squared L2 norm of words after projection by a matrix."""
+  yaml_tag = '!OneWordNonPSDProbe'
+  def __init__(self, args, model_dim, label_space_size, zero_features=False):
+    print('Constructing OneWordPSDProbe')
+    super(OneWordNonPSDProbe, self).__init__()
+    self.args = args
+    self.model_dim = model_dim
+    self.proj = nn.Parameter(data = torch.zeros(self.model_dim, self.model_dim))
+    nn.init.uniform_(self.proj, -0.05, 0.05)
+    self.to(args['device'])
+
+  def forward(self, batch):
+    """ Computes all n depths after projection
+    for each sentence in a batch.
+
+    Computes (Bh_i)^T(Bh_i) for all i
+
+    Args:
+      batch: a batch of word representations of the shape
+        (batch_size, max_seq_len, representation_dim)
+    Returns:
+      A tensor of depths of shape (batch_size, max_seq_len)
+    """
+    transformed = torch.matmul(batch, self.proj)
+    batchlen, seqlen, rank = transformed.size()
+    norms = torch.bmm(transformed.view(batchlen* seqlen, 1, rank),
+        transformed.view(batchlen* seqlen, rank, 1))
+    norms = norms.view(batchlen, seqlen)
+    return norms

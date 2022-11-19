@@ -1,0 +1,77 @@
+input_fields: &id_input_fields
+     - index
+     - sentence
+     - lemma_sentence
+     - upos_sentence
+     - xpos_sentence
+     - morph
+     - head_indices
+     - governance_relations
+     - secondary_relations
+     - extra_info
+     - embeddings
+
+cache: &id_cache !WholeDatasetCache
+  train_path: &idtrainpath test/dataset/en_ewt-ud-train.conllu
+  dev_path: &iddevpath test/dataset/en_ewt-ud-dev.conllu
+  test_path: &idtestpath test/dataset/en_ewt-ud-test.conllu
+
+disk_reader: !OntonotesReader &id_disk_reader
+  args: 
+    - device: cuda:0
+  train_path: *idtrainpath 
+  dev_path: *iddevpath 
+  test_path: *idtestpath 
+  cache: *id_cache
+
+dataset: !ListDataset
+  args: 
+    device: cuda:0
+  data_loader: *id_disk_reader
+  output_dataset: !AnnotationDataset
+    args: 
+      device: cuda:0
+    task: !ParseTask
+      args: 
+        device: cuda:0
+      task_name: !ParseDistanceTask
+      input_fields: *id_input_fields
+  input_datasets:
+    - !HuggingfaceData
+      args:
+        device: cuda:0
+      model_string: &model1string distilbert-base-uncased
+      cache: *id_cache
+
+model: !ListModel
+  args: 
+    device: cuda:0
+  models:
+    - !HuggingfaceModel
+        args:
+          device: cuda:0
+        model_string: *model1string
+        trainable: False
+        index: 0
+    
+probe: !TwoWordPSDProbe
+  args:
+    device: cuda:0
+  model_dim: 768
+  label_space_size: 32
+
+regimen: !ProbeRegimen
+  args:
+    device: cuda:0
+  max_epochs: 30
+  params_path: params
+  reporting_root: &id_reporting_root test/report/layer1.yaml.results
+
+reporter: !IndependentLabelReporter
+  args:
+    device: cuda:0
+  reporting_root: *id_reporting_root
+  reporting_methods:
+    - spearmanr
+    - image_examples
+    - uuas
