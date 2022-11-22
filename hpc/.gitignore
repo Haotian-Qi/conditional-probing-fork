@@ -7,4 +7,4 @@ scripts/*
 !scripts/setup_modules.sh
 
 # Output
-results/
+reports/
