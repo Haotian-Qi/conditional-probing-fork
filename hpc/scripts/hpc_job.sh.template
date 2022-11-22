@@ -4,7 +4,9 @@
 #$ -l gpu=1
 #$ -l rmem=13G
 
-source "$(dirname $0)/setup_modules.sh"
+module load apps/python/conda
+module load libs/cudnn/8.2.1.32/binary-cuda-11.3.0
+
 source activate python3
 
 <<main>>
