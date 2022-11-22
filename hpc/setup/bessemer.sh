@@ -1,7 +1,7 @@
 #!/bin/bash
 
-module load apps/python/conda
-module load dev/gcc/10.1
+module load Anaconda3/5.3.0
+module load GCC/10.2.0
 
 conda create --name darwin -y
 conda install -n darwin pip -y

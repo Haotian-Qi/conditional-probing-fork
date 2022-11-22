@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks=1
+#SBATCH --mem=33G
+#SBATCH --output=%j.out
+#SBATCH --mail-user=<<email>>
+
+module load Anaconda3/5.3.0
+module load cuDNN/8.0.4.30-CUDA-11.1.1
+
+<<main>>

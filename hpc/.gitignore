@@ -4,6 +4,7 @@ configs
 # Generated script files, except templates and module setup script
 scripts/*
 !scripts/sharc.sh.template
+!scripts/bessemer.sh.template
 
 # Output
 reports/

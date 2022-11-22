@@ -12,7 +12,7 @@ CONFIGS_DIR = "configs"
 SCRIPTS_DIR = "scripts"
 JOB_SCRIPT_TEMPLATE = os.path.join(
     SCRIPTS_DIR,
-    "sharc.sh.template" if CLUSTER == "sharc" else "bessemer.slurm.template",
+    f"{CLUSTER}.sh.template",
 )
 JOB_COMMAND_TEMPLATE = "python3 vinfo/experiment.py {config}"
 CURRENT_FILE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -34,8 +34,8 @@ def get_script_name() -> str:
     Returns a time-based filename for a job script file.
     """
     return dt.datetime.strftime(
-        dt.datetime.now(), "darwin_team_sierra_%Y%m%d_%H%M%S"
-    ) + (".sh" if CLUSTER == "sharc" else ".slurm")
+        dt.datetime.now(), "darwin_team_sierra_%Y%m%d_%H%M%S.sh"
+    )
 
 
 def write_config_file(path: str) -> Tuple[str, str]:
