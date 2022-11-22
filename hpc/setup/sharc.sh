@@ -5,6 +5,6 @@ module load dev/gcc/10.1
 
 conda create --name darwin -y
 conda install -n darwin pip -y
-source active darwin
+source activate darwin
 
 pip install -r requirements.txt
