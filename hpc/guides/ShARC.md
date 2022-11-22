@@ -40,11 +40,19 @@ We need to set up your Python environment with the packages needed, and copy the
 ./hpc/setup/sharc.sh
 ```
 
-This will take a while as the packages are downloaded.
+This will take a while as the packages are downloaded. Once that has finished, you can test that `torch` is working and that it has access to CUDA. Type `python3` in the command line and test for CUDA using:
+
+```python
+>>> import torch
+>>> torch.cuda.is_available()
+True
+```
+
+It should say `True` because we requested GPU for this interactive session.
 
 ## Submitting a job
 
-Before submitting jobs, you'll need to enter an interactive job session using `qrshx`, and `cd` into the repository. Test if you've got access to Python using `python3 --version`. If that command does not work, then you also need to activate the `conda` environment module in order to run Python:
+Before submitting jobs, you'll need to enter an interactive job session using `qrshx`, and `cd` into the repository. Test to see if you've got access to Python using `python3 --version`. If that command does not work, then you also need to activate the `conda` environment module in order to run Python:
 
 ```sh
 module load apps/python/conda
