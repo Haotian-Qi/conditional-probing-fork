@@ -4,7 +4,7 @@
 FASTDATA_DIR="/fastdata/$(whoami)"
 if [ ! -d "$FASTDATA_DIR" ]; then
   # Make personal fastdata directory
-  mkdir "$FASTDATA_DIR"
+  mkdir "$FASTDATA_DIR/distilbert/dataset"
   # Make it private to your user
   chmod 700 "$FASTDATA_DIR"
 fi
