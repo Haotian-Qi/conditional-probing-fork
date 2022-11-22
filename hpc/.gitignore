@@ -1,0 +1,10 @@
+# Generated .yaml configs
+configs
+
+# Generated script files, except templates and module setup script
+scripts/*
+!scripts/hpc_job.sh.template
+!scripts/setup_modules.sh
+
+# Output
+results/

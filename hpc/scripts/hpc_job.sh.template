@@ -1,0 +1,8 @@
+#!/bin/bash
+#$ -M <<email>>
+#$ -m abe
+#$ -l gpu=1
+#$ -l rmem=13G
+
+source setup_modules.sh
+<<main>>
