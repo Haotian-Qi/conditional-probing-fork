@@ -8,4 +8,3 @@ conda install -n darwin pip -y
 source active darwin
 
 pip install -r requirements.txt
-"$(dirname $0)/copy_data.sh"

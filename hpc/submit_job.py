@@ -24,7 +24,7 @@ DATASET_PATH_REGEXES = {
 REPORT_PATH_REGEX = r"(?<=\&id_reporting_root )(.*)"
 
 DATASET_PATHS = {
-    dataset: f"/data/{{username}}/distilbert/dataset/{dataset}.tsv"
+    dataset: os.path.join(os.getcwd(), "distilbert/dataset/{dataset}.tsv")
     for dataset in ("dev", "train", "test")
 }
 
