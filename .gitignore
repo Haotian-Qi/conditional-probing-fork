@@ -5,5 +5,9 @@ venv/
 __pycache__
 *.tsv.cache.*
 
+# HPC logs
+*.sh.e*
+*.sh.o*
+
 # IDE
 .vscode/
