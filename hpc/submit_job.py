@@ -106,7 +106,10 @@ def write_submission_script(email: str, config_file_path: str) -> str:
 
 
 def submit_job(script_path: str):
-    os.system(f"qsub {script_path}")
+    if CLUSTER == "sharc":
+        os.system(f"qsub {script_path}")
+    else:
+        os.system(f"sbatch {script_path}")
 
 
 def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
