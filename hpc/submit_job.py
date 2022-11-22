@@ -1,6 +1,5 @@
 import argparse
 import datetime as dt
-import getpass
 import os
 import re
 from typing import Tuple
@@ -58,11 +57,10 @@ def write_config_file(path: str) -> Tuple[str, str]:
     with open(path, "r") as f:
         config = f.read()
 
-    username = getpass.getuser()
     for dataset in DATASET_PATH_REGEXES:
         config = re.sub(
             DATASET_PATH_REGEXES[dataset],
-            DATASET_PATHS[dataset].format(username=username),
+            DATASET_PATHS[dataset],
             config,
             count=1,
         )
