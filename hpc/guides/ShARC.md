@@ -34,7 +34,7 @@ Once this happens, `cd` into the repository:
 cd conditional-probing-fork
 ```
 
-We need to set up your Python environment with the packages needed, and copy the datasets in the `/data` directory to allow faster access. Use the script `hpc/setup/sharc.sh` to do this:
+We need to set up your Python environment with the packages needed. Use the script `hpc/setup/sharc.sh` to do this:
 
 ```sh
 ./hpc/setup/sharc.sh
