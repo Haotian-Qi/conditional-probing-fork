@@ -28,7 +28,9 @@ def get_script_name() -> str:
     """
     Returns a time-based filename for a job script file.
     """
-    return dt.datetime.strftime(dt.datetime.now(), "%Y%m%d_%H%M%S.sh")
+    return dt.datetime.strftime(
+        dt.datetime.now(), "darwin_team_sierra_%Y%m%d_%H%M%S.sh"
+    )
 
 
 def write_config_file(path: str) -> Tuple[str, str]:
