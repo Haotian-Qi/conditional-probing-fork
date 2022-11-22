@@ -9,4 +9,4 @@ if [ ! -d "$FASTDATA_DIR" ]; then
   chmod 700 "$FASTDATA_DIR"
 fi
 
-cp -R distilbert/dataset "$FASTDATA_DIR"
+cp -R distilbert/dataset/* "$FASTDATA_DIR"
