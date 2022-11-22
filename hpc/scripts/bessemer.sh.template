@@ -3,6 +3,9 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --ntasks=1
 #SBATCH --mem=33G
+#SBATCH --partition=gpu
+#SBATCH --qos=gpu
+#SBATCH --gpus-per-node=1
 #SBATCH --output=%j.out
 #SBATCH --mail-user=<<email>>
 
