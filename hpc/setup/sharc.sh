@@ -4,6 +4,7 @@ module load apps/python/conda
 module load dev/gcc/10.1
 
 conda create --name python3 -y
+conda install -n python3 pip -y
 source active python3
 
 pip install -r requirements.txt

@@ -8,7 +8,10 @@ from typing import Tuple
 REPORTS_DIR = "reports"
 CONFIGS_DIR = "configs"
 SCRIPTS_DIR = "scripts"
-JOB_SCRIPT_TEMPLATE = os.path.join(SCRIPTS_DIR, "hpc_job.sh.template")
+JOB_SCRIPT_TEMPLATES = {
+    cluster: os.path.join(SCRIPTS_DIR, "{cluster}.sh.template")
+    for cluster in ("sharc", "bessemer")
+}
 JOB_COMMAND_TEMPLATE = "python3 vinfo/experiment.py {config}"
 CURRENT_FILE_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -22,6 +25,12 @@ DATASET_PATHS = {
     dataset: f"/data/{{username}}/distilbert/dataset/{dataset}.tsv"
     for dataset in ("dev", "train", "test")
 }
+
+
+def get_template_path() -> str:
+    return JOB_SCRIPT_TEMPLATES[
+        "bessemer" if os.environ.get("SGE_CLUSTER_NAME") is None else "sharc"
+    ]
 
 
 def get_script_name() -> str:
@@ -83,7 +92,7 @@ def write_submission_script(email: str, config_file_path: str) -> str:
 
     Returns the path to the new config file.
     """
-    with open(os.path.join(CURRENT_FILE_DIR, JOB_SCRIPT_TEMPLATE), "r") as f:
+    with open(os.path.join(CURRENT_FILE_DIR, get_template_path()), "r") as f:
         script_content = f.read()
 
     script_content = script_content.replace("<<email>>", email)

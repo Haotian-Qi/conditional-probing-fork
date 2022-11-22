@@ -3,8 +3,7 @@ configs
 
 # Generated script files, except templates and module setup script
 scripts/*
-!scripts/hpc_job.sh.template
-!scripts/setup_modules.sh
+!scripts/sharc.sh.template
 
 # Output
 reports/
