@@ -44,6 +44,9 @@ def write_config_file(path: str) -> Tuple[str, str]:
     Returns a tuple of the path where the report will be written,
     and the path to the config file generated.
     """
+    abs_config_dir = os.path.join(CURRENT_FILE_DIR, CONFIGS_DIR)
+    if not os.path.exists(abs_config_dir):
+        os.makedirs(abs_config_dir)
 
     with open(path, "r") as f:
         config = f.read()
@@ -64,7 +67,7 @@ def write_config_file(path: str) -> Tuple[str, str]:
     )
     config = re.sub(REPORT_PATH_REGEX, reporting_root, config, count=1)
 
-    new_config_file_path = os.path.join(CURRENT_FILE_DIR, CONFIGS_DIR, config_filename)
+    new_config_file_path = os.path.join(abs_config_dir, config_filename)
     with open(new_config_file_path, "w") as f:
         f.write(config)
 
@@ -86,7 +89,11 @@ def write_submission_script(email: str, config_file_path: str) -> str:
         "<<main>>", JOB_COMMAND_TEMPLATE.format(config=config_file_path)
     )
 
-    new_script_path = os.path.join(CURRENT_FILE_DIR, SCRIPTS_DIR, get_script_name())
+    abs_scripts_dir = os.path.join(CURRENT_FILE_DIR, SCRIPTS_DIR)
+    if not os.path.exists(abs_scripts_dir):
+        os.makedirs(abs_scripts_dir)
+
+    new_script_path = os.path.join(abs_scripts_dir, get_script_name())
     with open(new_script_path, "w") as f:
         f.write(script_content)
 
