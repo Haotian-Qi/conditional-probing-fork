@@ -83,13 +83,13 @@ You can find out more [here](https://docs.hpc.shef.ac.uk/en/latest/hpc/scheduler
 ShARC creates logs in the directory where you submitted a job, i.e. the Git repository. You can check the output logs any submitted job when it has finished by looking in files named in the format:
 
 ```sh
-${JOB_SCRIPT}-${JOB_ID}.out
+${JOB_ID}.out
 ```
 
-So if the submission job script is called `job.sh` and the job ID is `123456`, then the logs would be called
+So if the job ID is `123456`, then the logs would be called
 
 ```sh
-job.sh-123456
+123456.out
 ```
 
 ## Further Reading
