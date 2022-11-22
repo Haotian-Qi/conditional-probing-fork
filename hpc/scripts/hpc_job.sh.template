@@ -4,5 +4,6 @@
 #$ -l gpu=1
 #$ -l rmem=13G
 
-source setup_modules.sh
+source "$(dirname $0)/setup_modules.sh"
+conda install --file requirements.txt
 <<main>>
