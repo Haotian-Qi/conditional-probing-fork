@@ -445,7 +445,7 @@ class AnnotationData(InitYAMLObject):
     to a Torch tensor of integers representing the annotation
     """
     alignment = torch.eye(len(sentence))
-    return self.task._labels_of_sentence(sentence, split_string), alignment
+    return self.task.labels_of_sentence(sentence, split_string), alignment
 
 class Loader(InitYAMLObject):
   """
