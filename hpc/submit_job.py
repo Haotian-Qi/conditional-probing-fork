@@ -4,27 +4,41 @@ import os
 import re
 from typing import Tuple
 
+# Obtains cluster name via environment
 CLUSTER = "bessemer" if os.environ.get("SGE_CLUSTER_NAME") is None else "sharc"
 
+# Directories
 REPORTS_DIR = "reports"
 CONFIGS_DIR = "configs"
 SCRIPTS_DIR = "scripts"
+CURRENT_FILE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+# Path templates
 JOB_SCRIPT_TEMPLATE = os.path.join(
     SCRIPTS_DIR,
     f"{CLUSTER}.sh.template",
 )
 JOB_COMMAND_TEMPLATE = "python3 vinfo/experiment.py {config}"
-CURRENT_FILE_DIR = os.path.abspath(os.path.dirname(__file__))
 
+# Regexes
 DATASET_PATH_REGEXES = {
     dataset: rf"(?<=\&id{dataset}path )(.*)" for dataset in ("dev", "train", "test")
 }
-
 REPORT_PATH_REGEX = r"(?<=\&id_reporting_root )(.*)"
+TASK_NAME_REGEX = r"(?<=task_name: )(.*)"
 
+# Paths to datasets
 DATASET_PATHS = {
-    dataset: os.path.join(os.getcwd(), f"distilbert/dataset/{dataset}.tsv")
-    for dataset in ("dev", "train", "test")
+    "tsv": {
+        dataset: os.path.join(os.getcwd(), f"distilbert/dataset/{dataset}.tsv")
+        for dataset in ("dev", "train", "test")
+    },
+    "conll": {
+        dataset: os.path.join(
+            os.getcwd(), f"distilbert/dataset/{dataset}.ontonotes.withdep.conll"
+        )
+        for dataset in ("dev", "train", "test")
+    },
 }
 
 
@@ -35,6 +49,13 @@ def get_script_name() -> str:
     return dt.datetime.strftime(
         dt.datetime.now(), "darwin_team_sierra_%Y%m%d_%H%M%S.sh"
     )
+
+
+def get_task_name(config: str) -> str:
+    match = re.search(TASK_NAME_REGEX, config)
+    if match:
+        return match.group().lower()
+    return None
 
 
 def write_config_file(path: str) -> Tuple[str, str]:
@@ -57,16 +78,21 @@ def write_config_file(path: str) -> Tuple[str, str]:
     with open(path, "r") as f:
         config = f.read()
 
+    task_name = get_task_name(config)
+    if task_name in ("sst",):
+        file_type = "tsv"
+    else:
+        file_type = "conll"
+
     for dataset in DATASET_PATH_REGEXES:
         config = re.sub(
             DATASET_PATH_REGEXES[dataset],
-            DATASET_PATHS[dataset],
+            DATASET_PATHS[file_type][dataset],
             config,
             count=1,
         )
 
     config_filename = os.path.basename(path)
-
     reporting_root = os.path.join(
         CURRENT_FILE_DIR, REPORTS_DIR, f"{config_filename}.results"
     )
