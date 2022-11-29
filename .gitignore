@@ -3,7 +3,7 @@ venv/
 
 # Cache
 __pycache__
-*.tsv.cache.*
+*.cache.*
 
 # HPC logs
 *.sh.e*
