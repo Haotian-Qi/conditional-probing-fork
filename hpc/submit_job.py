@@ -34,9 +34,7 @@ DATASET_PATHS = {
         for dataset in ("dev", "train", "test")
     },
     "conll": {
-        dataset: os.path.join(
-            os.getcwd(), f"data/{dataset}.ontonotes.withdep.conll"
-        )
+        dataset: os.path.join(os.getcwd(), f"data/{dataset}.ontonotes.withdep.conll")
         for dataset in ("dev", "train", "test")
     },
 }
@@ -46,9 +44,7 @@ def get_script_name() -> str:
     """
     Returns a time-based filename for a job script file.
     """
-    return dt.datetime.strftime(
-        dt.datetime.now(), "darwin_team_sierra_%Y%m%d_%H%M%S.sh"
-    )
+    return dt.datetime.strftime(dt.datetime.now(), "script_%Y%m%d_%H%M%S.sh")
 
 
 def get_task_name(config: str) -> str:
