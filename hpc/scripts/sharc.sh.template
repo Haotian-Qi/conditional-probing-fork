@@ -1,6 +1,7 @@
 #!/bin/bash
 #$ -M <<email>>
 #$ -m abe
+#S -N darwin_team_sierra
 #$ -l gpu=1
 #$ -l rmem=13G
 
