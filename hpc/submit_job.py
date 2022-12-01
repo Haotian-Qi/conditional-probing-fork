@@ -30,12 +30,12 @@ TASK_NAME_REGEX = r"(?<=task_name: )(.*)"
 # Paths to datasets
 DATASET_PATHS = {
     "tsv": {
-        dataset: os.path.join(os.getcwd(), f"distilbert/dataset/{dataset}.tsv")
+        dataset: os.path.join(os.getcwd(), f"data/sst2-{dataset}.tsv")
         for dataset in ("dev", "train", "test")
     },
     "conll": {
         dataset: os.path.join(
-            os.getcwd(), f"distilbert/dataset/{dataset}.ontonotes.withdep.conll"
+            os.getcwd(), f"data/{dataset}.ontonotes.withdep.conll"
         )
         for dataset in ("dev", "train", "test")
     },

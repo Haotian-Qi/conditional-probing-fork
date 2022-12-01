@@ -9,5 +9,8 @@ __pycache__
 *.sh.e*
 *.sh.o*
 
+# Datasets
+data/
+
 # IDE
 .vscode/
