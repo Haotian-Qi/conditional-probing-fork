@@ -40,11 +40,11 @@ DATASET_PATHS = {
 }
 
 
-def get_script_name() -> str:
+def get_script_name(config_filename: str) -> str:
     """
-    Returns a time-based filename for a job script file.
+    Returns a filename for a job script file based on the config file name
     """
-    return dt.datetime.strftime(dt.datetime.now(), "script_%Y%m%d_%H%M%S.sh")
+    return config_filename.rsplit(".", maxsplit=1)[0] + ".sh"
 
 
 def get_task_name(config: str) -> str:
@@ -57,12 +57,6 @@ def get_task_name(config: str) -> str:
 def write_config_file(path: str) -> Tuple[str, str]:
     """
     Writes a config `.yaml` file in preparation for HPC job submission.
-
-    Edits dataset paths to those in the `/fastdata` directory,
-    sets the path for the report.
-
-    Use `copy_data.sh` to copy the datasets from `distilbert/dataset`
-    to the `fastdata` directory.
 
     Returns a tuple of the path where the report will be written,
     and the path to the config file generated.
@@ -120,7 +114,8 @@ def write_submission_script(email: str, config_file_path: str) -> str:
     if not os.path.exists(abs_scripts_dir):
         os.makedirs(abs_scripts_dir)
 
-    new_script_path = os.path.join(abs_scripts_dir, get_script_name())
+    config_filename = os.path.basename(config_file_path)
+    new_script_path = os.path.join(abs_scripts_dir, get_script_name(config_filename))
     with open(new_script_path, "w") as f:
         f.write(script_content)
 
