@@ -54,7 +54,7 @@ def get_task_name(config: str) -> str:
     return None
 
 
-def write_config_file(path: str) -> Tuple[str, str]:
+def write_config_file(path: str, reports_dir: str) -> Tuple[str, str]:
     """
     Writes a config `.yaml` file in preparation for HPC job submission.
 
@@ -83,9 +83,7 @@ def write_config_file(path: str) -> Tuple[str, str]:
         )
 
     config_filename = os.path.basename(path)
-    reporting_root = os.path.join(
-        CURRENT_FILE_DIR, REPORTS_DIR, f"{config_filename}.results"
-    )
+    reporting_root = os.path.join(CURRENT_FILE_DIR, REPORTS_DIR, reports_dir)
     config = re.sub(REPORT_PATH_REGEX, reporting_root, config, count=1)
 
     new_config_file_path = os.path.join(abs_config_dir, config_filename)
@@ -133,6 +131,14 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     parser = argparse.ArgumentParser()
     parser.add_argument("config", help="The path to the config .yaml file to use.")
     parser.add_argument("email", help="The email address to send HPC updates to.")
+    parser.add_argument(
+        "-r",
+        "--report",
+        help=(
+            "The name of the directory to store reports in. "
+            "Defaults to <config-filename>.results"
+        ),
+    )
 
     return parser, parser.parse_args()
 
@@ -140,7 +146,9 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
 def main() -> None:
     parser, args = parse_args()
 
-    reporting_root, config_file_path = write_config_file(args.config)
+    if args.report is None:
+        args.report = f"{os.path.basename(args.config)}.results"
+    reporting_root, config_file_path = write_config_file(args.config, args.report)
     print(f"Report will be written to {reporting_root}")
     print(f"New .yaml file written to {config_file_path}")
 
