@@ -42,7 +42,7 @@ model: !ListModel
         args:
           device: cuda:0
         model_string: *model1string
-        trainable: False
+        trainable: True
         index: 1
 
 probe: !SentenceLinearLabelProbe

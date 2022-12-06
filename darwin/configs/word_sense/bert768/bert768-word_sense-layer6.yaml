@@ -64,8 +64,8 @@ model: !ListModel
         args:
           device: cuda:0
         model_string: *model1string
-        trainable: False
-        index: 3
+        trainable: True
+        index: 6
     
 probe: !OneWordLinearLabelProbe
   args:
@@ -78,7 +78,7 @@ regimen: !ProbeRegimen
     device: cuda:0
   max_epochs: 50
   params_path: params
-  reporting_root: &id_reporting_root configs/round1/word_sense/roberta768/layer3.yaml.results
+  reporting_root: &id_reporting_root configs/round1/word_sense/roberta768/layer6.yaml.results
 
 reporter: !IndependentLabelReporter
   args:

@@ -53,7 +53,7 @@ dataset: !ListDataset
     - !HuggingfaceData
       args:
         device: cuda:0
-      model_string: &model1string google/bert_uncased_L-12_H-768_A-12
+      model_string: &model1string distilbert-base-uncased
       cache: *id_cache
 
 model: !ListModel
@@ -64,8 +64,8 @@ model: !ListModel
         args:
           device: cuda:0
         model_string: *model1string
-        trainable: False
-        index: 5
+        trainable: True
+        index: 10
     
 probe: !OneWordLinearLabelProbe
   args:
@@ -78,7 +78,7 @@ regimen: !ProbeRegimen
     device: cuda:0
   max_epochs: 50
   params_path: params
-  reporting_root: &id_reporting_root configs/round1/word_sense/roberta768/layer5.yaml.results
+  reporting_root: &id_reporting_root configs/round1/word_sense/roberta768/layer10.yaml.results
 
 reporter: !IndependentLabelReporter
   args:

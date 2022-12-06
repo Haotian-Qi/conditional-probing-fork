@@ -42,8 +42,8 @@ model: !ListModel
         args:
           device: cuda:0
         model_string: *model1string
-        trainable: False
-        index: 0
+        trainable: True
+        index: 1
 
 probe: !SentenceLinearLabelProbe
   args:
@@ -56,7 +56,7 @@ regimen: !ProbeRegimen
     device: cuda:0
   max_epochs: 50
   params_path: params
-  reporting_root: &id_reporting_root mytest/report/layer4.yaml.results
+  reporting_root: &id_reporting_root mytest/report/layer1.yaml.results
 
 reporter: !IndependentLabelReporter
   args:
