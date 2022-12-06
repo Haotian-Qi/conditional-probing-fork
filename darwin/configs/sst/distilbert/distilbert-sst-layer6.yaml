@@ -1,32 +1,14 @@
 input_fields: &id_input_fields
-  - one_offset_word_index
-  - token
-  - lemma
-  - upos
-  - ptb_pos
-  - None
-  - dep_head
-  - dep_rel
-  - None3
-  - None4
-  - source_file
-  - part_number
-  - zero_offset_word_index
-  - token2
-  - ptb_pos3
-  - parse_bit
-  - predicate_lemma
-  - predicate_frameset_id
-  - word_sense
-  - speaker_author
-  - named_entities
+  - newdoc_id
+  - sent_id
+  - text
 
 cache: &id_cache !WholeDatasetCache
-  train_path: &idtrainpath scripts/ontonotes_scripts/train.ontonotes.withdep.conll
-  dev_path: &iddevpath scripts/ontonotes_scripts/dev.ontonotes.withdep.conll
-  test_path: &idtestpath scripts/ontonotes_scripts/test.ontonotes.withdep.conll
+  train_path: &idtrainpath mytest/dataset/train.tsv
+  dev_path: &iddevpath mytest/dataset/dev.tsv
+  test_path: &idtestpath mytest/dataset/test.tsv
 
-disk_reader: !OntonotesReader &id_disk_reader
+disk_reader: !SST2Reader &id_disk_reader
   args: 
     - device: cuda:0
   train_path: *idtrainpath 
@@ -41,11 +23,10 @@ dataset: !ListDataset
   output_dataset: !AnnotationDataset
     args: 
       device: cuda:0
-    task: !TokenClassificationTask
+    task: !SentenceClassificationTask
       args: 
         device: cuda:0
-      task_name: dep_rel
-      input_fields: *id_input_fields
+      task_name: SST
   input_datasets:
     - !HuggingfaceData
       args:
@@ -62,20 +43,20 @@ model: !ListModel
           device: cuda:0
         model_string: *model1string
         trainable: True
-        index: 11
-    
-probe: !OneWordLinearLabelProbe
+        index: 6
+
+probe: !SentenceLinearLabelProbe
   args:
     device: cuda:0
   model_dim: 768
-  label_space_size: 42
+  label_space_size: 3
 
 regimen: !ProbeRegimen
   args:
     device: cuda:0
   max_epochs: 50
   params_path: params
-  reporting_root: &id_reporting_root configs/round1/dep_rel/bert768/layer11.yaml.results
+  reporting_root: &id_reporting_root mytest/report/layer5.yaml.results
 
 reporter: !IndependentLabelReporter
   args:
