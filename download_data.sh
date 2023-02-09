@@ -1,6 +1,8 @@
 #!/bin/bash
 
-cd "$(dirname $0)/data"
+DATA_DIR="$(dirname $0)/data"
+mkdir -p $DATA_DIR
+cd $DATA_DIR
 
 declare -A data_urls=( 
     [dev.ontonotes.withdep.conll]=https://worksheets.codalab.org/rest/bundles/0x6f3556ec9edf4774a2db0ad88f140fac/contents/blob/dev.ontonotes.withdep.conll
