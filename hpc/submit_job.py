@@ -1,5 +1,4 @@
 import argparse
-import datetime as dt
 import os
 import re
 from typing import Tuple
@@ -120,6 +119,14 @@ def write_submission_script(email: str, config_file_path: str) -> str:
     return new_script_path
 
 
+def get_email():
+    email_path = os.path.join(CURRENT_FILE_DIR, "email")
+    if os.path.exists(email_path):
+        with open(email_path, "r") as f:
+            return f.read().strip()
+    return None
+
+
 def submit_job(script_path: str):
     if CLUSTER == "sharc":
         os.system(f"qsub {script_path}")
@@ -130,7 +137,12 @@ def submit_job(script_path: str):
 def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     parser = argparse.ArgumentParser()
     parser.add_argument("config", help="The path to the config .yaml file to use.")
-    parser.add_argument("email", help="The email address to send HPC updates to.")
+    parser.add_argument(
+        "-e",
+        "--email",
+        help="The email address to send HPC updates to.",
+        default=get_email(),
+    )
     parser.add_argument(
         "-r",
         "--report",
@@ -145,6 +157,8 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
 
 def main() -> None:
     parser, args = parse_args()
+    if args.email is None:
+        parser.error("Email address not found. Create 'email' file, or pass -e flag")
 
     if args.report is None:
         args.report = f"{os.path.basename(args.config)}.results"
