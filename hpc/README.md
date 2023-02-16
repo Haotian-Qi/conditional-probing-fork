@@ -78,12 +78,18 @@ On Bessemer the command is
 module load Anaconda3/5.3.0
 ```
 
-From there, use the Python script `hpc/submit_job.py` to submit a job. The script takes two arguments: `config` is the path to the config `.yaml` file to use for the experiment, and `email` is the email address where updates about the submitted job should be sent. The Python script automatically detects which cluster you're on.
+Create a new plain tex file under the `hpc/` directory called `email` with your email address, e.g.
+
+```plain
+test@sheffield.ac.uk
+```
+
+From there, use the Python script `hpc/submit_job.py` to submit a job. The script takes a single positional arguemnt, `config`, which is the path to the config `.yaml` file to use for the experiment. The Python script automatically detects which cluster you're on.
 
 An example usage of this command would be:
 
 ```sh
-python3 hpc/submit_job.py distilbert/configs/sst/bert-sst-layer0-0.yaml test@sheffield.ac.uk
+python3 hpc/submit_job.py distilbert/configs/sst/bert-sst-layer0-0.yaml
 ```
 
 It should show the path to the script file produced for running the submission, and the job ID for the submitted job.
