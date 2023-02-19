@@ -1,0 +1,1 @@
+python vinfo/experiment.py bert/configs/dep-rel/bert-dep-rel-layer0.yaml

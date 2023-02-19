@@ -1,0 +1,1 @@
+python vinfo/experiment.py distilbert/configs/dep-rel/distil-dep-rel-layer0.yaml
