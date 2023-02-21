@@ -8,6 +8,7 @@ configs
 scripts/*
 !scripts/sharc.sh.template
 !scripts/bessemer.sh.template
+!scripts/download_data.sh
 
 # Output
 reports/
