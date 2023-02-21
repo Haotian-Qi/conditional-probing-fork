@@ -35,7 +35,7 @@ for filename in ${!CONLL_FILES[@]}; do
     echo "Downloading ${filename} from ${url}"
 
     # Determine if virus checking page is being shown
-    content_type=$(curl --head "${url}" | grep -Po 'content-type: \K[-a-z/]*')
+    content_type=$(curl --head "${url}" | tr '[:upper:]' '[:lower:]' | grep -Po 'content-type: \K[-a-z/]*')
     case $content_type in
     "text/html")
         action_url=$(curl -s "${url}" | grep -Po 'action="\K[^"]*' | sed "s/\&amp;/\&/g")
