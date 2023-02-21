@@ -8,6 +8,7 @@ __pycache__
 # HPC logs
 *.sh.e*
 *.sh.o*
+*.out
 
 # Datasets
 data/
