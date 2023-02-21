@@ -18,7 +18,7 @@ import gzip
 import codecs
 import optparse
 import collections
-import ConfigParser
+import configparser
 from optparse import OptionParser
 
 
@@ -230,7 +230,7 @@ class FancyConfigParserError(Exception):
 
 
 
-class FancyConfigParser(ConfigParser.SafeConfigParser):
+class FancyConfigParser(configparser.SafeConfigParser):
     """ make a config parser with support for config[section, value]
 
     raises :class:`FancyConfigParserError` on improper usage.
@@ -309,7 +309,7 @@ def load_config(cfg_name=None, config_append=[]):
                             "\nto no avail.")
 
 
-    for (section, key_name), value in parse_cfg_args(config_append).iteritems():
+    for (section, key_name), value in parse_cfg_args(config_append).items():
         if not config.has_section(section):
             config.add_section(section)
         config.set(section, key_name, value)
@@ -386,11 +386,11 @@ def pretty_print_parse_string(a_parse_string, offset=''):
     maxindent=300
 
     # Table of indentation at parse depth
-    depth_to_indent = [0 for i in xrange(maxdepth)]
+    depth_to_indent = [0 for i in range(maxdepth)]
 
     # Initialize indent_string[i] to be a string of i spaces
-    indent_string = ['' for i in xrange(maxindent)]
-    for i in xrange(maxindent-1):
+    indent_string = ['' for i in range(maxindent)]
+    for i in range(maxindent-1):
         indent_string[i+1] = indent_string[i] + ' '
 
     # RE object for split that matches on a ')' followed by not a ')', but only consumes the ')'
@@ -520,7 +520,7 @@ def main():
 
             elif(file_line == ""):
                 a_parsed_sentence = parsed_sentence(r_c_matrix)
-                print a_parsed_sentence
+                print (a_parsed_sentence)
                 r_c_matrix = []
 
             else:
