@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash python
 
 function usage {
 cat <<EOF
@@ -183,7 +183,7 @@ for language in arabic english chinese; do
         fi
 
         conll=${skel/_skel/$EXT}
-        erun -v "python2 skeleton2conll.py $gold_parse $skel $conll $EDITED --text"
+        erun -v "python skeleton2conll.py $gold_parse $skel $conll $EDITED --text"
       done
     fi
   done

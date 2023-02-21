@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 
 function usage {
 cat <<EOF
@@ -166,7 +166,7 @@ for file in $(find $d -name "*_conll"); do
 
   parse=${file/_conll/_parse}
   echo "$file -> $parse ..."
-  python2 conll2parse.py -l $LANGUAGE $file > $parse
+  python conll2parse.py -l $LANGUAGE $file > $parse
 done
 
 

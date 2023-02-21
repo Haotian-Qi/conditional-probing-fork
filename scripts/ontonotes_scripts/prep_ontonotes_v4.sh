@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 # Preps data from ontonotes as used in _Conditional Variational Information Probes_
 # Attempts to describe the entire data processing process, as there seems to be no
 # single accepted way to process ontonotes.
@@ -16,8 +16,8 @@
 ## https://catalog.ldc.upenn.edu/LDC2013T19
 
 # For example, ldc_ontonotes=/scr/corpora/ldc/2013/LDC2013T19/ontonotes-release-5.0/data/files/data/
-ldc_ontonotes=$1 # Input as argument to this script
-#ldc_ontonotes=/scr/corpora/ldc/2013/LDC2013T19/ontonotes-release-5.0/data/files/data/
+#ldc_ontonotes=$1 # Input as argument to this script
+ldc_ontonotes=ontonotes-release-5.0/data/files/data
 
 ##### Step 1
 ## Convert the raw LDC release to conll format, with PoS, NER, constituents, SRL, coref
