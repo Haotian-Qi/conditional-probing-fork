@@ -189,11 +189,11 @@ class HuggingfaceData(InitYAMLObject):
     mtx = torch.zeros(len(string1), len(string2))
     cumulative = 0
     for opcode in opcodes:
+      opcode_type, str1b, str1e, str2b, str2e = opcode
       str1b-=1
       str1e-=1
       str2b-=1
       str1e-=1
-      opcode_type, str1b, str1e, str2b, str2e = opcode
       if opcode_type in {'equal', 'replace'}:
         diff = str1e - str1b
         for i in range(diff):
