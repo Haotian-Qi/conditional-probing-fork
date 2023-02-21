@@ -1,0 +1,11 @@
+# Ontonotes datasets
+*.tar.gz
+conll-2012/
+
+# CoreNLP
+stanford-corenlp-4.0.0.zip
+stanford-corenlp-4.0.0/
+corenlp.env
+
+# Compiled ConLL files
+*.conll
