@@ -21,12 +21,13 @@ JOB_SCRIPT_TEMPLATE = os.path.join(
 )
 JOB_COMMAND_TEMPLATE = "python3 vinfo/experiment.py {config}"
 
-# Regexes
+# Regexes and patterns
 DATASET_PATH_REGEXES = {
     dataset: rf"(?<=\&id{dataset}path )(.*)" for dataset in ("dev", "train", "test")
 }
 REPORT_PATH_REGEX = r"(?<=\&id_reporting_root )(.*)"
 TASK_NAME_REGEX = r"(?<=task_name: )(.*)"
+QOS_CONFIG_FILE = "#SBATCH --qos=gpu\n"
 
 # Paths to datasets
 DATASET_PATHS = {
@@ -94,7 +95,11 @@ def write_config_file(path: str, reports_dir: str) -> Tuple[str, str]:
     return reporting_root, new_config_file_path
 
 
-def write_submission_script(email: str, config_file_path: str) -> str:
+def write_submission_script(
+    email: str,
+    config_file_path: str,
+    use_dcs_gpu: bool,
+) -> str:
     """
     Writes a new submission script for executing the experiment
     with the given config file path.
@@ -108,6 +113,13 @@ def write_submission_script(email: str, config_file_path: str) -> str:
     script_content = script_content.replace(
         "<<main>>", JOB_COMMAND_TEMPLATE.format(config=config_file_path)
     )
+    if use_dcs_gpu:
+        script_content = script_content.replace(QOS_CONFIG_FILE, "")
+        script_content = script_content.replace("<<partition>>", "dcs-gpu")
+        script_content = script_content.replace("<<account>>", "dcs-res")
+    else:
+        script_content = script_content.replace("<<partition>>", "gpu")
+        script_content = script_content.replace("<<account>>", "free")
 
     abs_scripts_dir = os.path.join(CURRENT_FILE_DIR, SCRIPTS_DIR)
     if not os.path.exists(abs_scripts_dir):
@@ -153,6 +165,13 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
             "Defaults to <config-filename>.results"
         ),
     )
+    parser.add_argument(
+        "--use-dcs-gpu",
+        help=(
+            "Whether or not to use the DCS GPU nodes. Throws error if not on Bessemer."
+        ),
+        action="store_true",
+    )
 
     return parser, parser.parse_args()
 
@@ -161,6 +180,8 @@ def main() -> None:
     parser, args = parse_args()
     if args.email is None:
         parser.error("Email address not found. Create 'email' file, or pass -e flag")
+    if args.use_dcs_gpu and not CLUSTER == "bessemer":
+        parser.error("DCS GPU nodes are only available on Bessemer")
 
     if args.report is None:
         args.report = f"{os.path.basename(args.config)}.results"
@@ -168,7 +189,9 @@ def main() -> None:
     print(f"Report will be written to {reporting_root}")
     print(f"New .yaml file written to {config_file_path}")
 
-    submission_script_path = write_submission_script(args.email, config_file_path)
+    submission_script_path = write_submission_script(
+        args.email, config_file_path, args.use_dcs_gpu
+    )
     print(f"New submission file written {submission_script_path}")
 
     submit_job(submission_script_path)
