@@ -48,7 +48,9 @@ We need to setup our Python environment with the packages needed. A script is pr
 
 replacing `<cluster>` with either `sharc` or `bessmer`.
 
-This will take a while as the packages are downloaded. Once that has finished, you can test that PyTorch is working and that it has access to CUDA. Type `python3` in the command line and test for CUDA using:
+This will take a while as the packages are downloaded. Once that has finished, you can test that PyTorch is working and that it has access to CUDA.
+
+Do `source activate darwin` to activate the Conda environment where packages have been installed, then type `python3` in the command line and test for CUDA using:
 
 ```python
 >>> import torch
