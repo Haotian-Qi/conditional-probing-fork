@@ -1,0 +1,10 @@
+[flake8]
+# Configured for use with Black
+max-line-length = 88
+ignore = E203, W503
+exclude =
+    .git
+    venv
+    dist
+    build
+    __pycache__
