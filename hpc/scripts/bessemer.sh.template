@@ -7,7 +7,7 @@
 #SBATCH --account=<<account>>
 #SBATCH --qos=gpu
 #SBATCH --gpus-per-node=1
-#SBATCH --output=hpc/logs/%x-%j.out
+#SBATCH --output=%x-%j.out
 #SBATCH --mail-user=<<email>>
 #SBATCH --mail-type=ALL
 
