@@ -140,13 +140,7 @@ class ListDataset(Dataset, InitYAMLObject):
     max_output_annotation_len = max([x[1][0].shape[0] for x in observation_list])
     for output_annotation, output_alignment in (x[1] for x in observation_list):
       new_annotation_tensor = torch.zeros(max_output_annotation_len, dtype=torch.long)
-      try:
-        new_annotation_tensor[:len(output_annotation)] = output_annotation
-      except:
-        print("###########")
-        print(len(output_annotation))
-        print(len(new_annotation_tensor))
-        raise AssertionError
+      new_annotation_tensor[:len(output_annotation)] = output_annotation
       intermediate_annotation_list.append(new_annotation_tensor)
     output_annotation_tensor = torch.stack(intermediate_annotation_list).to(self.args['device'])
     sentences = [x[2] for x in observation_list]
@@ -168,7 +162,10 @@ class ELMoData(InitYAMLObject):
       words = [x[1] for x in sentence]
       alignment = torch.eye(len(words))
       return batch_to_ids([words])[0,:,:], alignment
-      #for index, token in enumerate([x[1] for x in sentence]): 
+      #for index, token in enumerate([x[1] for x in sentence]):
+
+
+    
 
 class HuggingfaceData(InitYAMLObject):
   """
@@ -198,30 +195,14 @@ class HuggingfaceData(InitYAMLObject):
         diff = str1e - str1b
         for i in range(diff):
           mtx[str1b+i,str2b+i] = 1
-
       if opcode_type == 'delete':
         diff = str1e - str1b
         for i in range(diff):
-          try:
-            mtx[str1b+i, str2b] = 1
-          except:
-            print("######")
-            print(mtx.shape)
-            print(str1b)
-            print(str2b)
-            print(i)
+          mtx[str1b+i, str2b] = 1
       if opcode_type == 'insert':
         diff = str2e - str2b
         for i in range(diff):
-          try:
-            mtx[str1b, str2b+i] = 1
-          except:
-            print("######")
-            print(mtx.shape)
-            print(str1b)
-            print(str2b)
-            print(i)
-        raise
+          mtx[str1b, str2b+i] = 1
     return mtx
   
   def token_to_character_alignment(self, tokens):
@@ -459,6 +440,7 @@ class Loader(InitYAMLObject):
   """
   yaml_tag = '!Loader'
 
+
 class OntonotesReader(Loader):
   """
   Minutae for reading the Ontonotes dataset,
@@ -514,6 +496,7 @@ class OntonotesReader(Loader):
       for sentence in OntonotesReader.sentence_lists_of_stream(fin):
         yield sentence
 
+
 class SST2Reader(Loader):
   """
   Minutae for reading the Stanford Sentiment (SST-2)
@@ -563,16 +546,3 @@ class SST2Reader(Loader):
     with open(path) as fin:
       for sentence in SST2Reader.sentence_lists_of_stream(fin):
         yield sentence
-
-class StructureProbeReader(Loader):
-  """
-  Test Reader
-  """
-  yaml_tag = '!StructureProbeReader'
-
-  def __init__(self, args, train_path, dev_path, test_path, cache):
-    print('Constructing StructureProbeReader')
-    self.train_path = train_path
-    self.dev_path = dev_path
-    self.test_path = test_path
-    self.cache = cache
