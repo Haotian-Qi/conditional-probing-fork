@@ -7,8 +7,9 @@
 #SBATCH --account=<<account>>
 #SBATCH --qos=gpu
 #SBATCH --gpus-per-node=1
-#SBATCH --output=%j.out
+#SBATCH --output=hpc/logs/%x-%j.out
 #SBATCH --mail-user=<<email>>
+#SBATCH --mail-type=ALL
 
 module load Anaconda3/2019.07
 module load cuDNN/8.0.4.30-CUDA-11.1.1
