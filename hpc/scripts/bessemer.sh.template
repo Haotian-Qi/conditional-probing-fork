@@ -9,7 +9,7 @@
 #SBATCH --gpus-per-node=1
 #SBATCH --output=%x-%j.out
 #SBATCH --mail-user=<<email>>
-#SBATCH --mail-type=ALL
+#SBATCH --mail-type=BEGIN,END,FAIL
 
 module load Anaconda3/2019.07
 module load cuDNN/8.0.4.30-CUDA-11.1.1
