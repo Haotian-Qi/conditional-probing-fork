@@ -238,7 +238,7 @@ class HuggingfaceData(InitYAMLObject):
             str1b -= 1
             str1e -= 1
             str2b -= 1
-            str1e -= 1
+            str2e -= 1
             if opcode_type in {"equal", "replace"}:
                 diff = str1e - str1b
                 for i in range(diff):
