@@ -1,12 +1,16 @@
 import os
 
-import torch
-from stanza.models.ner.utils import bio2_to_bioes
-
-from yaml import YAMLObject
-from utils import IGNORE_LABEL_INDEX, TRAIN_STR, DEV_STR, TEST_STR, InitYAMLObject
-from utils import get_conversion_dict
 import h5py
+import torch
+from utils import (
+    DEV_STR,
+    IGNORE_LABEL_INDEX,
+    TEST_STR,
+    TRAIN_STR,
+    InitYAMLObject,
+    get_conversion_dict,
+)
+from yaml import YAMLObject
 
 
 class TokenClassificationTask(InitYAMLObject):
@@ -15,7 +19,8 @@ class TokenClassificationTask(InitYAMLObject):
     of each dataset-given token into one of a finite number of
     categories.
     """
-    yaml_tag = '!TokenClassificationTask'
+
+    yaml_tag = "!TokenClassificationTask"
     train_cache = None
     dev_cache = None
     test_cache = None
@@ -29,7 +34,7 @@ class TokenClassificationTask(InitYAMLObject):
         """
         self.task_name = task_name
         # self.name_to_index_dict = {name:i for i, name in enumerate(args['input_fields'])}
-        self.label_vocab = {'[PAD]': 0, '-': 0, '_': 0}
+        self.label_vocab = {"[PAD]": 0, "-": 0, "_": 0}
         self.ints_to_strings = {}
         # self.cache = cache
         self.cache = None
@@ -44,37 +49,39 @@ class TokenClassificationTask(InitYAMLObject):
         otherwise constructs a writer to cache features as they're constructed
         """
         train_cache_path = self.cache.get_cache_path_and_check(
-            TRAIN_STR, self.task_name)
-        dev_cache_path = self.cache.get_cache_path_and_check(
-            DEV_STR, self.task_name)
-        test_cache_path = self.cache.get_cache_path_and_check(
-            TEST_STR, self.task_name)
+            TRAIN_STR, self.task_name
+        )
+        dev_cache_path = self.cache.get_cache_path_and_check(DEV_STR, self.task_name)
+        test_cache_path = self.cache.get_cache_path_and_check(TEST_STR, self.task_name)
 
         self.train_cache_writer = None
         self.dev_cache_writer = None
         self.test_cache_writer = None
 
         if os.path.exists(train_cache_path):
-            f = h5py.File(train_cache_path, 'r')
-            self.train_cache = (torch.tensor(f[str(i)][()])
-                                for i in range(len(f.keys())))
+            f = h5py.File(train_cache_path, "r")
+            self.train_cache = (
+                torch.tensor(f[str(i)][()]) for i in range(len(f.keys()))
+            )
         else:
-            self.train_cache_writer = h5py.File(train_cache_path, 'w')
+            self.train_cache_writer = h5py.File(train_cache_path, "w")
         if os.path.exists(dev_cache_path):
-            f2 = h5py.File(dev_cache_path, 'r')
-            self.dev_cache = (torch.tensor(f2[str(i)][()])
-                              for i in range(len(f2.keys())))
+            f2 = h5py.File(dev_cache_path, "r")
+            self.dev_cache = (
+                torch.tensor(f2[str(i)][()]) for i in range(len(f2.keys()))
+            )
         else:
-            self.dev_cache_writer = h5py.File(dev_cache_path, 'w')
+            self.dev_cache_writer = h5py.File(dev_cache_path, "w")
         if os.path.exists(test_cache_path):
-            f3 = h5py.File(test_cache_path, 'r')
-            self.test_cache = (torch.tensor(f3[str(i)][()])
-                               for i in range(len(f3.keys())))
+            f3 = h5py.File(test_cache_path, "r")
+            self.test_cache = (
+                torch.tensor(f3[str(i)][()]) for i in range(len(f3.keys()))
+            )
         else:
-            self.test_cache_writer = h5py.File(test_cache_path, 'w')
+            self.test_cache_writer = h5py.File(test_cache_path, "w")
 
     def category_int_of_label_string(self, label_string):
-        """ Constructs and accesses label vocab
+        """Constructs and accesses label vocab
 
         Arguments:
           label_string: the string representation of an annotation label
@@ -83,11 +90,11 @@ class TokenClassificationTask(InitYAMLObject):
           for that label of one did not previously exist
         """
         if label_string not in self.label_vocab:
-            self.label_vocab[label_string] = max(self.label_vocab.values())+1
+            self.label_vocab[label_string] = max(self.label_vocab.values()) + 1
         return self.label_vocab[label_string]
 
     def category_string_of_label_int(self, label_integer):
-        """ Convergs from label integers back to their strings
+        """Convergs from label integers back to their strings
 
         Arguments:
           label_string: the integer representation of an annotation label
@@ -95,12 +102,13 @@ class TokenClassificationTask(InitYAMLObject):
           The string of that label if it exists, or raises an error
         """
         if len(self.ints_to_strings) < len(self.label_vocab):
-            self.ints_to_strings = {index: label for (
-                label, index) in self.label_vocab.items()}
+            self.ints_to_strings = {
+                index: label for (label, index) in self.label_vocab.items()
+            }
         return self.ints_to_strings[int(label_integer)]
 
     def _manual_setup(self):
-        """ Handles initialization not done in __init__ because of the YAML constructor
+        """Handles initialization not done in __init__ because of the YAML constructor
 
         Done when labels_of_sentence is called, but if (for testing) another function is
         called, there may be extra setup to be done. (Not done in init because the yaml
@@ -108,14 +116,15 @@ class TokenClassificationTask(InitYAMLObject):
         """
         # If self.cache is None, then all caching should be skipped
         if self.name_to_index_dict is None:
-            self.name_to_index_dict = {name: i for i,
-                                       name in enumerate(self.input_fields)}
+            self.name_to_index_dict = {
+                name: i for i, name in enumerate(self.input_fields)
+            }
             self.task_label_index = self.name_to_index_dict[self.task_name]
             if self.cache is not None:
                 self.setup_cache()
 
     def labels_of_sentence(self, sentence, split):
-        """ Provides a tensor of labels for a sentence
+        """Provides a tensor of labels for a sentence
 
         Arguments:
           sentence: a list of lists of data read with fields given in args['input_fields']
@@ -137,9 +146,15 @@ class TokenClassificationTask(InitYAMLObject):
             return next(self.dev_cache)
         if split == TEST_STR and self.test_cache:
             return next(self.test_cache)
-        cache_writer = (self.train_cache_writer if split == TRAIN_STR else (
-                        self.dev_cache_writer if split == DEV_STR else (
-                            self.test_cache_writer if split == TEST_STR else None)))
+        cache_writer = (
+            self.train_cache_writer
+            if split == TRAIN_STR
+            else (
+                self.dev_cache_writer
+                if split == DEV_STR
+                else (self.test_cache_writer if split == TEST_STR else None)
+            )
+        )
         if cache_writer is None:
             raise ValueError("Unknown split: {}".format(split))
         labels = self._labels_of_sentence(sentence, split)
@@ -149,7 +164,7 @@ class TokenClassificationTask(InitYAMLObject):
         return labels
 
     def _labels_of_sentence(self, sentence, esplit):
-        """ Provides a tensor of labels for a sentence; no caching
+        """Provides a tensor of labels for a sentence; no caching
 
         Arguments:
           sentence: a list of lists of data read with fields given in args['input_fields']
@@ -161,18 +176,25 @@ class TokenClassificationTask(InitYAMLObject):
         labels = torch.zeros(len(sentence))
         for token_index, token_attribute_list in enumerate(sentence):
             label_string = token_attribute_list[self.task_label_index]
-            labels[token_index] = self.category_int_of_label_string(
-                label_string)
+            labels[token_index] = self.category_int_of_label_string(label_string)
         return labels
 
 
 class CoarseTokenClassificationTask(TokenClassificationTask):
-    yaml_tag = '!CoarseTokenClassificationTask'
+    yaml_tag = "!CoarseTokenClassificationTask"
     train_cache = None
     dev_cache = None
     test_cache = None
 
-    def __init__(self, args, task_name, input_fields, conversion_name, cache=None, train_types_only=False):
+    def __init__(
+        self,
+        args,
+        task_name,
+        input_fields,
+        conversion_name,
+        cache=None,
+        train_types_only=False,
+    ):
         """
         Task which annotates coarse versions of existing annotations
         from a dataset, using one of a hard-coded set of conversion
@@ -189,12 +211,12 @@ class CoarseTokenClassificationTask(TokenClassificationTask):
         self.name_to_index_dict = None
         self.cache = None
         self.ints_to_strings = {}
-        self.label_vocab = {'[PAD]': 0, '-': 0, '_': 0}
+        self.label_vocab = {"[PAD]": 0, "-": 0, "_": 0}
         self.train_types_only = train_types_only
         self.train_type_vocab = set()
 
     def category_int_of_label_string(self, label_string):
-        """ Constructs and accesses label vocab, with coarsening
+        """Constructs and accesses label vocab, with coarsening
 
         Provides label vocab but maps each given label using the
         dictionary provided by the conversion name
@@ -213,7 +235,7 @@ class CoarseTokenClassificationTask(TokenClassificationTask):
         return self.label_vocab[label_string]
 
     def _labels_of_sentence(self, sentence, split):
-        """ Provides a tensor of labels for a sentence; no caching
+        """Provides a tensor of labels for a sentence; no caching
 
         Optionally limits
 
@@ -228,21 +250,20 @@ class CoarseTokenClassificationTask(TokenClassificationTask):
         for token_index, token_attribute_list in enumerate(sentence):
             label_string = token_attribute_list[self.task_label_index]
             if self.train_types_only:
-                word_type = token_attribute_list[self.input_fields.index(
-                    'token')]
+                word_type = token_attribute_list[self.input_fields.index("token")]
                 if split == TRAIN_STR:
                     self.train_type_vocab.add(word_type)
                 else:
                     old_label_string = label_string
-                    label_string = label_string if word_type in self.train_type_vocab else '-'
-            labels[token_index] = self.category_int_of_label_string(
-                label_string)
+                    label_string = (
+                        label_string if word_type in self.train_type_vocab else "-"
+                    )
+            labels[token_index] = self.category_int_of_label_string(label_string)
         return labels
 
 
 class NERClassificationTask(TokenClassificationTask):
-
-    yaml_tag = '!NERClassificationTask'
+    yaml_tag = "!NERClassificationTask"
     train_cache = None
     dev_cache = None
     test_cache = None
@@ -256,7 +277,7 @@ class NERClassificationTask(TokenClassificationTask):
         """
         self.task_name = task_name
         # self.name_to_index_dict = {name:i for i, name in enumerate(args['input_fields'])}
-        self.label_vocab = {'[PAD]': 0, '-': 0, 'O': 1, '_': 0}
+        self.label_vocab = {"[PAD]": 0, "-": 0, "O": 1, "_": 0}
         # self.cache = cache
         self.cache = None
         self.input_fields = input_fields
@@ -265,31 +286,30 @@ class NERClassificationTask(TokenClassificationTask):
         self.ints_to_strings = {}
 
     def _string_labels_of_sentence(self, sentence):
-        """ Provides the BIOES string annotation for NER from the annotations of Ontonotes
-        """
+        """Provides the BIOES string annotation for NER from the annotations of Ontonotes"""
         label_strings = []
-        ongoing_label = 'O'
+        ongoing_label = "O"
         for token_index, token_attribute_list in enumerate(sentence):
-            raw_label_string = token_attribute_list[self.task_label_index].strip(
-                '*')
-            if '(' in raw_label_string:
-                ongoing_label = raw_label_string.strip('(').strip(')')
+            raw_label_string = token_attribute_list[self.task_label_index].strip("*")
+            if "(" in raw_label_string:
+                ongoing_label = raw_label_string.strip("(").strip(")")
                 beginning = True
             # labels[token_index] = self.category_int_of_label_string(ongoing_label)
-            if ongoing_label == 'O':
+            if ongoing_label == "O":
                 label_strings.append(ongoing_label)
             else:
                 label_strings.append(
-                    '{}-{}'.format('B' if beginning else 'I', ongoing_label))
+                    "{}-{}".format("B" if beginning else "I", ongoing_label)
+                )
             beginning = False
-            if ')' in raw_label_string:
-                ongoing_label = 'O'
+            if ")" in raw_label_string:
+                ongoing_label = "O"
         # bioes_tags = bio2_to_bioes(label_strings)
         bioes_tags = label_strings
         return bioes_tags
 
     def _labels_of_sentence(self, sentence, split):
-        """ Provides a tensor of labels for a sentence; no caching
+        """Provides a tensor of labels for a sentence; no caching
 
         Arguments:
           sentence: a list of lists of data read with fields given in args['input_fields']
@@ -298,7 +318,7 @@ class NERClassificationTask(TokenClassificationTask):
           for the task specified by self.task_name
         """
         # print(self.label_vocab)
-        self.category_int_of_label_string('O')
+        self.category_int_of_label_string("O")
         bioes_tags = self._string_labels_of_sentence(sentence)
         labels = torch.zeros(len(sentence))
         for index, label in enumerate(bioes_tags):
@@ -307,22 +327,19 @@ class NERClassificationTask(TokenClassificationTask):
 
 
 class SentenceClassificationTask(TokenClassificationTask):
-
-    yaml_tag = '!SentenceClassificationTask'
+    yaml_tag = "!SentenceClassificationTask"
     train_cache = None
     dev_cache = None
     test_cache = None
 
     def __init__(self, args, task_name, cache=None):
-        """
-
-        """
+        """ """
         # self.task_name = task_name
         # self.name_to_index_dict = {name:i for i, name in enumerate(args['input_fields'])}
-        self.name_to_index_dict = {'index': 0, 'token': 1, 'label': 2}
+        self.name_to_index_dict = {"index": 0, "token": 1, "label": 2}
         self.task_name = task_name
-        self.input_fields = ['index', 'token', 'label']
-        self.label_vocab = {'[PAD]': 0}
+        self.input_fields = ["index", "token", "label"]
+        self.label_vocab = {"[PAD]": 0}
         # self.cache = cache
         self.cache = None
         self.ints_to_strings = {}
@@ -331,7 +348,7 @@ class SentenceClassificationTask(TokenClassificationTask):
         # self.name_to_index_dict = None
 
     def _labels_of_sentence(self, sentence, split):
-        """ Provides a tensor of labels for a sentence; no caching
+        """Provides a tensor of labels for a sentence; no caching
 
         Arguments:
           sentence: a list of lists of data where the fields are (token, sentence_label)
@@ -340,13 +357,13 @@ class SentenceClassificationTask(TokenClassificationTask):
         """
         labels = torch.ones(1)
         labels[0] = self.category_int_of_label_string(
-            sentence[0][self.name_to_index_dict['label']])
+            sentence[0][self.name_to_index_dict["label"]]
+        )
         return labels
 
 
 class ParseTask(InitYAMLObject):
-
-    yaml_tag = '!ParseTask'
+    yaml_tag = "!ParseTask"
     """Abstract class representing a linguistic task mapping texts to labels."""
 
     @staticmethod
@@ -366,7 +383,7 @@ class ParseTask(InitYAMLObject):
         """
         self.task_name = task_name
         # self.name_to_index_dict = {name:i for i, name in enumerate(args['input_fields'])}
-        self.label_vocab = {'[PAD]': 0, '-': 0, '_': 0}
+        self.label_vocab = {"[PAD]": 0, "-": 0, "_": 0}
         self.ints_to_strings = {}
         # self.cache = cache
         self.cache = None
@@ -381,39 +398,40 @@ class ParseTask(InitYAMLObject):
         otherwise constructs a writer to cache features as they're constructed
         """
         train_cache_path = self.cache.get_cache_path_and_check(
-            TRAIN_STR, self.task_name)
-        dev_cache_path = self.cache.get_cache_path_and_check(
-            DEV_STR, self.task_name)
-        test_cache_path = self.cache.get_cache_path_and_check(
-            TEST_STR, self.task_name)
+            TRAIN_STR, self.task_name
+        )
+        dev_cache_path = self.cache.get_cache_path_and_check(DEV_STR, self.task_name)
+        test_cache_path = self.cache.get_cache_path_and_check(TEST_STR, self.task_name)
 
         self.train_cache_writer = None
         self.dev_cache_writer = None
         self.test_cache_writer = None
 
         if os.path.exists(train_cache_path):
-            f = h5py.File(train_cache_path, 'r')
-            self.train_cache = (torch.tensor(f[str(i)][()])
-                                for i in range(len(f.keys())))
+            f = h5py.File(train_cache_path, "r")
+            self.train_cache = (
+                torch.tensor(f[str(i)][()]) for i in range(len(f.keys()))
+            )
         else:
-            self.train_cache_writer = h5py.File(train_cache_path, 'w')
+            self.train_cache_writer = h5py.File(train_cache_path, "w")
         if os.path.exists(dev_cache_path):
-            f2 = h5py.File(dev_cache_path, 'r')
-            self.dev_cache = (torch.tensor(f2[str(i)][()])
-                              for i in range(len(f2.keys())))
+            f2 = h5py.File(dev_cache_path, "r")
+            self.dev_cache = (
+                torch.tensor(f2[str(i)][()]) for i in range(len(f2.keys()))
+            )
         else:
-            self.dev_cache_writer = h5py.File(dev_cache_path, 'w')
+            self.dev_cache_writer = h5py.File(dev_cache_path, "w")
         if os.path.exists(test_cache_path):
-            f3 = h5py.File(test_cache_path, 'r')
-            self.test_cache = (torch.tensor(f3[str(i)][()])
-                               for i in range(len(f3.keys())))
+            f3 = h5py.File(test_cache_path, "r")
+            self.test_cache = (
+                torch.tensor(f3[str(i)][()]) for i in range(len(f3.keys()))
+            )
         else:
-            self.test_cache_writer = h5py.File(test_cache_path, 'w')
+            self.test_cache_writer = h5py.File(test_cache_path, "w")
 
 
 class ParseDistanceTask(ParseTask):
-
-    yaml_tag = '!ParseDistanceTask'
+    yaml_tag = "!ParseDistanceTask"
     """Maps observations to dependency parse distances between words."""
     train_cache = None
     dev_cache = None
@@ -428,14 +446,13 @@ class ParseDistanceTask(ParseTask):
         """
         self.task_name = task_name
         # self.name_to_index_dict = {name:i for i, name in enumerate(args['input_fields'])}
-        self.label_vocab = {'[PAD]': 0, '-': 0, 'O': 1, '_': 0}
+        self.label_vocab = {"[PAD]": 0, "-": 0, "O": 1, "_": 0}
         # self.cache = cache
         self.cache = None
         self.input_fields = input_fields
         self.task_name = task_name
         self.name_to_index_dict = None
         self.ints_to_strings = {}
-
 
     @staticmethod
     def labels(observation):
@@ -447,19 +464,21 @@ class ParseDistanceTask(ParseTask):
         in the parse tree as specified by the observation annotation.
         """
         sentence_length = len(
-            observation[0])  # All observation fields must be of same length
+            observation[0]
+        )  # All observation fields must be of same length
         distances = torch.zeros((sentence_length, sentence_length))
         for i in range(sentence_length):
             for j in range(i, sentence_length):
                 i_j_distance = ParseDistanceTask.distance_between_pairs(
-                    observation, i, j)
+                    observation, i, j
+                )
                 distances[i][j] = i_j_distance
                 distances[j][i] = i_j_distance
         return distances
 
     @staticmethod
     def distance_between_pairs(observation, i, j, head_indices=None):
-        '''Computes path distance between a pair of words
+        """Computes path distance between a pair of words
         TODO: It would be (much) more efficient to compute all pairs' distances at once;
             this pair-by-pair method is an artefact of an older design, but
             was unit-tested for correctness...
@@ -472,27 +491,27 @@ class ParseDistanceTask(ParseTask):
             words, or None, if observation != None.
         Returns:
         The integer distance d_path(i,j)
-        '''
+        """
         if i == j:
             return 0
         if observation:
             head_indices = []
             number_of_underscores = 0
             for elt in observation.head_indices:
-                if elt == '_':
+                if elt == "_":
                     head_indices.append(0)
                     number_of_underscores += 1
                 else:
                     head_indices.append(int(elt) + number_of_underscores)
-        i_path = [i+1]
-        j_path = [j+1]
-        i_head = i+1
-        j_head = j+1
+        i_path = [i + 1]
+        j_path = [j + 1]
+        i_head = i + 1
+        j_head = j + 1
         while True:
-            if not (i_head == 0 and (i_path == [i+1] or i_path[-1] == 0)):
+            if not (i_head == 0 and (i_path == [i + 1] or i_path[-1] == 0)):
                 i_head = head_indices[i_head - 1]
                 i_path.append(i_head)
-            if not (j_head == 0 and (j_path == [j+1] or j_path[-1] == 0)):
+            if not (j_head == 0 and (j_path == [j + 1] or j_path[-1] == 0)):
                 j_head = head_indices[j_head - 1]
                 j_path.append(j_head)
             if i_head in j_path:
@@ -512,8 +531,7 @@ class ParseDistanceTask(ParseTask):
 
 
 class ParseDepthTask(ParseTask):
-    
-    yaml_tag = '!ParseDepthTask'
+    yaml_tag = "!ParseDepthTask"
     """Maps observations to a depth in the parse tree for each word"""
 
     @staticmethod
@@ -526,7 +544,8 @@ class ParseDepthTask(ParseTask):
         in the parse tree as specified by the observation annotation.
         """
         sentence_length = len(
-            observation[0])  # All observation fields must be of same length
+            observation[0]
+        )  # All observation fields must be of same length
         depths = torch.zeros(sentence_length)
         for i in range(sentence_length):
             depths[i] = ParseDepthTask.get_ordering_index(observation, i)
@@ -534,7 +553,7 @@ class ParseDepthTask(ParseTask):
 
     @staticmethod
     def get_ordering_index(observation, i, head_indices=None):
-        '''Computes tree depth for a single word in a sentence
+        """Computes tree depth for a single word in a sentence
         Args:
         observation: an Observation namedtuple, with a head_indices field.
             or None, if head_indies != None
@@ -543,18 +562,18 @@ class ParseDepthTask(ParseTask):
             words, or None, if observation != None.
         Returns:
         The integer depth in the tree of word i
-        '''
+        """
         if observation:
             head_indices = []
             number_of_underscores = 0
             for elt in observation.head_indices:
-                if elt == '_':
+                if elt == "_":
                     head_indices.append(0)
                     number_of_underscores += 1
                 else:
                     head_indices.append(int(elt) + number_of_underscores)
         length = 0
-        i_head = i+1
+        i_head = i + 1
         while True:
             i_head = head_indices[i_head - 1]
             if i_head != 0:
