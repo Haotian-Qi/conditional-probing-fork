@@ -30,7 +30,7 @@ exit 0
 
 output_config () {
     new_filename=$(echo $(basename $bert768_config_path) | sed "s/bert768/${model_name}/" -)
-    cat $bert768_config_path | sed "s,google/bert_uncased_L-12_H-768_A-12,$model_string,g" - >> "${model_task_dir}/${new_filename}"
+    cat $bert768_config_path | sed "s,google/bert_uncased_L-12_H-768_A-12,$model_string,g" - > "${model_task_dir}/${new_filename}"
 }
 
 # Print help if no arguments or flags passed
