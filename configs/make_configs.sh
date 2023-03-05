@@ -10,8 +10,8 @@ Usage: $0 model_string layers
 Creates probing configs for the given model string for the tasks dep_rel, 
 named_entities, ptb_pos, sst2, upos and word_sense.
 
-Creates for layer{0..n} and layers{1..n}-0, where n is the number of layers
-in the model.
+Creates configs for layer{0..n} and layers{1..n}-0, where n is the number
+of layers in the model.
 
 You must have the bert768 configs in the configs/ directory for each task.
 
