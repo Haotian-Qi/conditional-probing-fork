@@ -89,7 +89,7 @@ def write_config_file(path: str, reports_dir: str) -> Tuple[str, str]:
     config = re.sub(REPORT_PATH_REGEX, reporting_root, config, count=1)
 
     new_config_file_path = os.path.join(abs_config_dir, config_filename)
-    with open(new_config_file_path, "w") as f:
+    with open(new_config_file_path, "w+") as f:
         f.write(config)
 
     return reporting_root, new_config_file_path
