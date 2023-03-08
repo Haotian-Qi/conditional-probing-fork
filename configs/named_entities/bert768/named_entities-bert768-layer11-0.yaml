@@ -22,9 +22,9 @@ input_fields: &id_input_fields
   - named_entities
 
 cache: &id_cache !WholeDatasetCache
-  train_path: &idtrainpath scripts/ontonotes_scripts/train.ontonotes.withdep.conll
-  dev_path: &iddevpath scripts/ontonotes_scripts/dev.ontonotes.withdep.conll
-  test_path: &idtestpath scripts/ontonotes_scripts/test.ontonotes.withdep.conll
+  train_path: &idtrainpath data/train.ontonotes.withdep.conll
+  dev_path: &iddevpath data/dev.ontonotes.withdep.conll
+  test_path: &idtestpath data/test.ontonotes.withdep.conll
 
 disk_reader: !OntonotesReader &id_disk_reader
   args: 
@@ -86,7 +86,7 @@ regimen: !ProbeRegimen
     device: cuda:0
   max_epochs: 50
   params_path: params
-  reporting_root: &id_reporting_root configs/round1/named_entities/bert768/layer11-0.yaml.results
+  reporting_root: &id_reporting_root configs/named_entities/bert768/layer11-0.yaml.results
 
 reporter: !NERReporter
   args:
