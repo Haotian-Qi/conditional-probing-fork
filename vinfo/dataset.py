@@ -217,7 +217,6 @@ class HuggingfaceData(InitYAMLObject):
         self.cache_writers = get_split_dictionary()
         self.cache_tokens = get_split_dictionary()
         self.cache_alignments = get_split_dictionary()
-        self.task_name = "hfacetokens.{}".format(model_string)
         self.cache_is_setup = False
 
     def levenshtein_matrix(self, string1, string2):
@@ -377,7 +376,7 @@ class HuggingfaceData(InitYAMLObject):
         # Check cache readable/writeable
         for split in SPLITS:
             path, readable, writable = self.cache.get_cache_path_and_check(
-                split, self.task_name
+                split, "hfacetokens"
             )
 
             if not readable and not writable:
