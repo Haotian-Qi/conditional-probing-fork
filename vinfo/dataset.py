@@ -5,7 +5,14 @@ from allennlp.modules.elmo import batch_to_ids
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 from transformers import AutoTokenizer
-from utils import DEV_STR, TEST_STR, TRAIN_STR, InitYAMLObject
+from utils import (
+    DEV_STR,
+    SPLITS,
+    TEST_STR,
+    TRAIN_STR,
+    InitYAMLObject,
+    get_split_dictionary,
+)
 from yaml import YAMLObject
 
 BATCH_SIZE = 50
@@ -62,42 +69,23 @@ class ListDataset(Dataset, InitYAMLObject):
         self.input_datasets = input_datasets
         self.output_dataset = output_dataset
         self.data_loader = data_loader
-        self.train_data = None
-        self.dev_data = None
-        self.test_data = None
+        self.data = get_split_dictionary()
 
     def get_train_dataloader(self, shuffle=True):
         """Returns a PyTorch DataLoader object with the training data"""
-        if self.train_data is None:
-            self.train_data = list(self.load_data(TRAIN_STR))
-            # generator = IterableDatasetWrapper(self.load_data(TRAIN_STR))
-        generator = IterableDatasetWrapper(self.train_data)
-        return DataLoader(
-            generator,
-            batch_size=BATCH_SIZE,
-            shuffle=shuffle,
-            collate_fn=self.collate_fn,
-        )
+        return self._get_dataloader(TRAIN_STR, shuffle)
 
     def get_dev_dataloader(self, shuffle=False):
         """Returns a PyTorch DataLoader object with the dev data"""
-        if self.dev_data is None:
-            self.dev_data = list(self.load_data(DEV_STR))
-            # generator = IterableDatasetWrapper(self.load_data(DEV_STR))
-        generator = IterableDatasetWrapper(self.dev_data)
-        return DataLoader(
-            generator,
-            batch_size=BATCH_SIZE,
-            shuffle=shuffle,
-            collate_fn=self.collate_fn,
-        )
+        return self._get_dataloader(DEV_STR, shuffle)
 
     def get_test_dataloader(self, shuffle=False):
-        """Returns a PyTorch DataLoader object with the test data"""
-        if self.test_data is None:
-            self.test_data = list(self.load_data(TEST_STR))
-            # generator = IterableDatasetWrapper(self.load_data(TEST_STR))
-        generator = IterableDatasetWrapper(self.test_data)
+        return self._get_dataloader(TEST_STR, shuffle)
+
+    def _get_dataloader(self, split, shuffle):
+        if self.data[split] is None:
+            self.data[split] = list(self.load_data(split))
+        generator = IterableDatasetWrapper(self.data[split])
         return DataLoader(
             generator,
             batch_size=BATCH_SIZE,
@@ -105,20 +93,20 @@ class ListDataset(Dataset, InitYAMLObject):
             collate_fn=self.collate_fn,
         )
 
-    def load_data(self, split_string):
+    def load_data(self, split):
         """Loads data from disk into RAM tensors for passing to a network on GPU
 
         Iterates through the training set once, passing each sentence to each
         input Dataset and the output Dataset
         """
         for sentence in tqdm(
-            self.data_loader.yield_dataset(split_string), desc="[loading]"
+            self.data_loader.yield_dataset(split), desc="[loading]"
         ):
             input_tensors = []
             for dataset in self.input_datasets:
-                input_tensors.append(dataset.tensor_of_sentence(sentence, split_string))
+                input_tensors.append(dataset.tensor_of_sentence(sentence, split))
             output_tensor = self.output_dataset.tensor_of_sentence(
-                sentence, split_string
+                sentence, split
             )
             yield (input_tensors, output_tensor, sentence)
 
@@ -219,13 +207,16 @@ class HuggingfaceData(InitYAMLObject):
 
     yaml_tag = "!HuggingfaceData"
 
-    def __init__(self, args, model_string, cache=None):
+    def __init__(self, args, model_string, cache=None, wait_for_cache=False):
         print("Constructing HuggingfaceData of {}".format(model_string))
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_string
         )  # , add_prefix_space=True)
         self.args = args
         self.cache = cache
+        self.cache_writers = get_split_dictionary()
+        self.cache_tokens = get_split_dictionary()
+        self.cache_alignments = get_split_dictionary()
         self.task_name = "hfacetokens.{}".format(model_string)
         self.cache_is_setup = False
 
@@ -380,117 +371,59 @@ class HuggingfaceData(InitYAMLObject):
         Constructs readers for caches that exist
         and writers for caches that do not.
         """
-        if self.cache is None:
-            return
-        if self.cache_is_setup:
+        if self.cache is None or self.cache_is_setup:
             return
 
         # Check cache readable/writeable
-        (
-            train_cache_path,
-            train_cache_readable,
-            train_cache_writeable,
-        ) = self.cache.get_cache_path_and_check(TRAIN_STR, self.task_name)
-        (
-            dev_cache_path,
-            dev_cache_readable,
-            dev_cache_writeable,
-        ) = self.cache.get_cache_path_and_check(DEV_STR, self.task_name)
-        (
-            test_cache_path,
-            test_cache_readable,
-            test_cache_writeable,
-        ) = self.cache.get_cache_path_and_check(TEST_STR, self.task_name)
+        for split in SPLITS:
+            path, readable, writable = self.cache.get_cache_path_and_check(
+                split, self.task_name
+            )
 
-        # If any of the train/dev/test are neither readable nor writeable, do not use cache.
-        if (
-            (not train_cache_readable and not train_cache_writeable)
-            or (not dev_cache_readable and not dev_cache_writeable)
-            or (not test_cache_readable and not test_cache_writeable)
-        ):
-            self.cache = None
-            print(
-                "Not using the cache at all, since at least of one "
-                "of {train,dev,test} cache neither readable nor writable."
-            )
-            return
+            if not readable and not writable:
+                self.cache = None
+                print(
+                    f"Not using the cache, as {split} cache is neither readable nor writable."
+                )
+                return
 
-        # Load readers or writers
-        self.train_cache_writer = None
-        self.dev_cache_writer = None
-        self.test_cache_writer = None
+            if readable:
+                # Load from cache
+                f = h5py.File(path, "r")
+                self.cache_tokens[split] = (
+                    torch.tensor(f[str(i) + "tok"][()]) for i in range(len(f.keys()))
+                )
+                self.cache_alignments[split] = (
+                    torch.tensor(f[str(i) + "aln"][()]) for i in range(len(f.keys()))
+                )
+            elif writable:
+                # Setup writer
+                self.cache_writers[split] = self.cache.get_hdf5_cache_writer(path)
+                self.cache_tokens[split] = None
+                self.cache_alignments[split] = None
+            else:
+                # Should not reach here
+                raise ValueError(
+                    f"{split.title()} cache neither readable nor writeable"
+                )
 
-        if train_cache_readable:
-            f = h5py.File(train_cache_path, "r")
-            self.train_cache_tokens = (
-                torch.tensor(f[str(i) + "tok"][()]) for i in range(len(f.keys()))
-            )
-            self.train_cache_alignments = (
-                torch.tensor(f[str(i) + "aln"][()]) for i in range(len(f.keys()))
-            )
-        elif train_cache_writeable:
-            # self.train_cache_writer = h5py.File(train_cache_path, 'w')
-            self.train_cache_writer = self.cache.get_hdf5_cache_writer(train_cache_path)
-            self.train_cache_tokens = None
-            self.train_cache_alignments = None
-        else:
-            raise ValueError("Train cache neither readable nor writeable")
-        if dev_cache_readable:
-            f2 = h5py.File(dev_cache_path, "r")
-            self.dev_cache_tokens = (
-                torch.tensor(f2[str(i) + "tok"][()]) for i in range(len(f2.keys()))
-            )
-            self.dev_cache_alignments = (
-                torch.tensor(f2[str(i) + "aln"][()]) for i in range(len(f2.keys()))
-            )
-        elif dev_cache_writeable:
-            # self.dev_cache_writer = h5py.File(dev_cache_path, 'w')
-            self.dev_cache_writer = self.cache.get_hdf5_cache_writer(dev_cache_path)
-            self.dev_cache_tokens = None
-            self.dev_cache_alignments = None
-        else:
-            raise ValueError("Dev cache neither readable nor writeable")
-        if test_cache_readable:
-            f3 = h5py.File(test_cache_path, "r")
-            self.test_cache_tokens = (
-                torch.tensor(f3[str(i) + "tok"][()]) for i in range(len(f3.keys()))
-            )
-            self.test_cache_alignments = (
-                torch.tensor(f3[str(i) + "aln"][()]) for i in range(len(f3.keys()))
-            )
-        elif test_cache_writeable:
-            # self.test_cache_writer = h5py.File(test_cache_path, 'w')
-            self.test_cache_writer = self.cache.get_hdf5_cache_writer(test_cache_path)
-            self.test_cache_tokens = None
-            self.test_cache_alignments = None
-        else:
-            raise ValueError("Test cache neither readable nor writeable")
         self.cache_is_setup = True
 
     def tensor_of_sentence(self, sentence, split):
         self._setup_cache()
-        if self.cache is None:
-            labels = self._tensor_of_sentence(sentence, split)
-            return labels
-
-        # Otherwise, either read from or write to cache
-        if split == TRAIN_STR and self.train_cache_tokens is not None:
-            return next(self.train_cache_tokens), next(self.train_cache_alignments)
-        if split == DEV_STR and self.dev_cache_tokens is not None:
-            return next(self.dev_cache_tokens), next(self.dev_cache_alignments)
-        if split == TEST_STR and self.test_cache_tokens is not None:
-            return next(self.test_cache_tokens), next(self.test_cache_alignments)
-        cache_writer = (
-            self.train_cache_writer
-            if split == TRAIN_STR
-            else (
-                self.dev_cache_writer
-                if split == DEV_STR
-                else (self.test_cache_writer if split == TEST_STR else None)
-            )
-        )
-        if cache_writer is None:
+        if split not in SPLITS:
             raise ValueError("Unknown split: {}".format(split))
+
+        # Cache is not being used
+        if self.cache is None:
+            return self._tensor_of_sentence(sentence, split)
+
+        # Cache is being read from
+        if self.cache_tokens[split] is not None:
+            return next(self.cache_tokens[split]), next(self.train_cache[split])
+
+        # Get tensor of sentence, and write to cache
+        cache_writer = self.cache_writers[split]
         wordpiece_indices, alignments = self._tensor_of_sentence(sentence, split)
 
         tok_string_key = (

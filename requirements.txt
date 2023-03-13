@@ -16,3 +16,4 @@ torchvision<0.14,>=0.13.0
 tqdm>=4.62.3
 transformers<4.21
 typer<0.5,>=0.4.2
+watchdog==2.3.1

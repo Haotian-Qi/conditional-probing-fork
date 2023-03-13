@@ -10,21 +10,20 @@ IGNORE_LABEL_INDEX = -100
 TRAIN_STR = "train"
 DEV_STR = "dev"
 TEST_STR = "test"
+SPLITS = (TRAIN_STR, DEV_STR, TEST_STR)
 
 PTB_UNIVERSAL_CONVERSION_STRING = "ptb_to_upos"
 WSD_COARSENING_CONVERSION_STRING = "wsd_coarse"
 
 
-def get_results_root(config):
-    pass
+def get_split_dictionary(default_value=None):
+    """
+    Returns an initialized dictionary, with a key for each of the three data splits:
+    `train`, `dev`, and `test`.
 
-
-def get_experiment_dir(config):
-    pass
-
-
-def get_default_ontonotes_fieldnames():
-    """ """
+    The initialised value defaults to `None`.
+    """
+    return {split: default_value for split in (TRAIN_STR, DEV_STR, TEST_STR)}
 
 
 class InitYAMLObject(YAMLObject):
