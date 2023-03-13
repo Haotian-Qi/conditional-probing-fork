@@ -7,18 +7,7 @@ import time
 
 import h5py
 from utils import DEV_STR, SPLITS, TEST_STR, TRAIN_STR, InitYAMLObject
-from watchdog.observers import Observer
-from watchdog.events import PatternMatchingEventHandler
 from yaml import YAMLObject
-
-
-class _LockFileEventHandler(PatternMatchingEventHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.file_deleted = False
-
-    def on_deleted(self, event):
-        self.file_deleted = True
 
 
 class WholeDatasetCache(InitYAMLObject):
@@ -58,16 +47,8 @@ class WholeDatasetCache(InitYAMLObject):
         """
         Waits for the file at `lock_path` to be released, i.e. deleted.
         """
-        event_handler = _LockFileEventHandler(patterns=(os.path.basename(lock_path),))
-        observer = Observer()
-        observer.schedule(event_handler, os.path.dirname(lock_path))
-        observer.start()
-        try:
-            while not event_handler.file_deleted:
-                time.sleep(1)
-        finally:
-            observer.stop()
-            observer.join()
+        while os.path.exists(lock_path):
+            time.sleep(1)
 
     def _get_cache_path(self, split, task_name):
         return f"{self.paths[split]}.cache.{task_name}.hdf5"
@@ -149,9 +130,7 @@ class WholeDatasetCache(InitYAMLObject):
     def release_locks(self):
         """Removes lock files from caches"""
         lock_paths = itertools.chain(
-            glob.glob(self.train_path + "*.lock"),
-            glob.glob(self.dev_path + "*.lock"),
-            glob.glob(self.test_path + "*.lock"),
+            glob.glob(path + "*.lock") for path in self.paths.values()
         )
         for cache_lock_path in lock_paths:
             print("Removing cache lock file at {}".format(cache_lock_path))
