@@ -129,9 +129,7 @@ class WholeDatasetCache(InitYAMLObject):
 
     def release_locks(self):
         """Removes lock files from caches"""
-        lock_paths = itertools.chain(
-            glob.glob(path + "*.lock") for path in self.paths.values()
-        )
+        lock_paths = (f"{path}.lock" for path in self.paths.values())
         for cache_lock_path in lock_paths:
             print("Removing cache lock file at {}".format(cache_lock_path))
             os.remove(cache_lock_path)
