@@ -1,9 +1,9 @@
 #!/bin/bash
 
-source "$(dirname $0)/setup_env.sh"
+. "$(dirname $0)/activate_modules.sh"
 
 conda create --name darwin -y
 conda install -n darwin pip wheel -y
-source activate darwin
+. "$(dirname $0)/activate_env.sh"
 
 pip install -r requirements.txt

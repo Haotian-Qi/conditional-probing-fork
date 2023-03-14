@@ -51,6 +51,7 @@ This will take a while as the packages are downloaded. Once that has finished, y
 Run the command
 
 ```sh
+source hpc/setup/setup_modules.sh
 source hpc/setup/setup_env.sh
 ```
 
@@ -72,9 +73,10 @@ Use `qrshx` if you're on ShARC, or `srun --pty bash -i` if you're on Bessemer.
 
 Test to see if you've got access to Python using `python3 --version`. If that command does not work, then you also need to activate the right environment module in order to run Python.
 
-Run the command:
+Run the commands:
 
 ```sh
+source hpc/setup/setup_modules.sh
 source hpc/setup/setup_env.sh
 ```
 
