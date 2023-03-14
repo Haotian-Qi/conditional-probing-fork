@@ -380,7 +380,6 @@ class HuggingfaceData(InitYAMLObject):
         if self.cache is None or self.cache_is_setup:
             return
 
-        files = new_split_dictionary()
         # Check cache readable/writeable
         for split in SPLITS:
             path, readable, writable = self.cache.get_cache_path_and_check(
