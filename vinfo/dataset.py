@@ -419,7 +419,7 @@ class HuggingfaceData(InitYAMLObject):
 
         # Cache is being read from
         if self.cache_tokens[split] is not None:
-            return next(self.cache_tokens[split]), next(self.train_cache[split])
+            return next(self.cache_tokens[split]), next(self.cache_alignments[split])
 
         # Get tensor of sentence, and write to cache
         cache_writer = self.cache_writers[split]
