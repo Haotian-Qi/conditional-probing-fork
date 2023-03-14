@@ -99,15 +99,11 @@ class ListDataset(Dataset, InitYAMLObject):
         Iterates through the training set once, passing each sentence to each
         input Dataset and the output Dataset
         """
-        for sentence in tqdm(
-            self.data_loader.yield_dataset(split), desc="[loading]"
-        ):
+        for sentence in tqdm(self.data_loader.yield_dataset(split), desc="[loading]"):
             input_tensors = []
             for dataset in self.input_datasets:
                 input_tensors.append(dataset.tensor_of_sentence(sentence, split))
-            output_tensor = self.output_dataset.tensor_of_sentence(
-                sentence, split
-            )
+            output_tensor = self.output_dataset.tensor_of_sentence(sentence, split)
             yield (input_tensors, output_tensor, sentence)
 
     def collate_fn(self, observation_list):
@@ -373,6 +369,7 @@ class HuggingfaceData(InitYAMLObject):
         if self.cache is None or self.cache_is_setup:
             return
 
+        files = new_split_dictionary()
         # Check cache readable/writeable
         for split in SPLITS:
             path, readable, writable = self.cache.get_cache_path_and_check(
@@ -388,12 +385,14 @@ class HuggingfaceData(InitYAMLObject):
 
             if readable:
                 # Load from cache
-                f = h5py.File(path, "r")
+                files[split] = h5py.File(path, "r")
                 self.cache_tokens[split] = (
-                    torch.tensor(f[str(i) + "tok"][()]) for i in range(len(f.keys()))
+                    torch.tensor(files[split][str(i) + "tok"][()])
+                    for i in range(len(files[split].keys()))
                 )
                 self.cache_alignments[split] = (
-                    torch.tensor(f[str(i) + "aln"][()]) for i in range(len(f.keys()))
+                    torch.tensor(files[split][str(i) + "aln"][()])
+                    for i in range(len(files[split].keys()))
                 )
             elif writable:
                 # Setup writer
