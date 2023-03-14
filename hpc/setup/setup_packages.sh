@@ -1,7 +1,6 @@
 #!/bin/bash
 
-module load Anaconda3/2019.07
-module load GCC/10.2.0
+source "$(dirname $0)/setup_env.sh"
 
 conda create --name darwin -y
 conda install -n darwin pip wheel -y

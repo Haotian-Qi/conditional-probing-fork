@@ -40,17 +40,21 @@ It might take a moment to load while resources are allocated for the session. Yo
 cd conditional-probing-fork
 ```
 
-We need to setup our Python environment with the packages needed. A script is provided for each cluster to do this. Run the command:
+We need to setup our Python environment with the packages needed. Run the command:
 
 ```sh
-./hpc/setup/<cluster>.sh
+./hpc/setup/setup_packages.sh
 ```
-
-replacing `<cluster>` with either `sharc` or `bessmer`.
 
 This will take a while as the packages are downloaded. Once that has finished, you can test that PyTorch is working and that it has access to CUDA.
 
-Do `source activate darwin` to activate the Conda environment where packages have been installed, then type `python3` in the command line and test for CUDA using:
+Run the command
+
+```sh
+source hpc/setup/setup_env.sh
+```
+
+to activate the Conda environment where packages have been installed, then type `python3` in the command line and test for CUDA using:
 
 ```python
 >>> import torch
@@ -68,16 +72,10 @@ Use `qrshx` if you're on ShARC, or `srun --pty bash -i` if you're on Bessemer.
 
 Test to see if you've got access to Python using `python3 --version`. If that command does not work, then you also need to activate the right environment module in order to run Python.
 
-On ShARC the command to do this is:
+Run the command:
 
 ```sh
-module load apps/python/conda
-```
-
-On Bessemer the command is
-
-```sh
-module load Anaconda3/5.3.0
+source hpc/setup/setup_env.sh
 ```
 
 Create a new plain tex file under the `hpc/` directory called `email` with your email address, e.g.
