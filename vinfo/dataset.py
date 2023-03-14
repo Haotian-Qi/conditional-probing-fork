@@ -29,6 +29,17 @@ Classes for loading, caching, and yielding text datasets
 #  yaml_tag = '!Dataset'
 
 
+def _huggingfacedata_generator(f, type):
+    """
+    Prevents issues with closures caused by passing more than one generator expression
+    in the same scope that share variables.
+    """
+    return (
+        torch.tensor(f[f"{i}{type}"][()])
+        for i in range(len(f.keys()))
+    )
+
+
 class IterableDatasetWrapper(Dataset):  # (IterableDataset):
     """
     Wrapper class to pass to a DataLoader so it doesn't
@@ -385,15 +396,9 @@ class HuggingfaceData(InitYAMLObject):
 
             if readable:
                 # Load from cache
-                files[split] = h5py.File(path, "r")
-                self.cache_tokens[split] = (
-                    torch.tensor(files[split][str(i) + "tok"][()])
-                    for i in range(len(files[split].keys()))
-                )
-                self.cache_alignments[split] = (
-                    torch.tensor(files[split][str(i) + "aln"][()])
-                    for i in range(len(files[split].keys()))
-                )
+                f = h5py.File(path, "r")
+                self.cache_tokens[split] = _huggingfacedata_generator(f, "tok")
+                self.cache_alignments[split] = _huggingfacedata_generator(f, "aln")
             elif writable:
                 # Setup writer
                 self.cache_writers[split] = self.cache.get_hdf5_cache_writer(path)
