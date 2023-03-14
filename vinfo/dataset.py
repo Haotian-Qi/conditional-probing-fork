@@ -11,7 +11,7 @@ from utils import (
     TEST_STR,
     TRAIN_STR,
     InitYAMLObject,
-    get_split_dictionary,
+    new_split_dictionary,
 )
 from yaml import YAMLObject
 
@@ -69,7 +69,7 @@ class ListDataset(Dataset, InitYAMLObject):
         self.input_datasets = input_datasets
         self.output_dataset = output_dataset
         self.data_loader = data_loader
-        self.data = get_split_dictionary()
+        self.data = new_split_dictionary()
 
     def get_train_dataloader(self, shuffle=True):
         """Returns a PyTorch DataLoader object with the training data"""
@@ -214,9 +214,9 @@ class HuggingfaceData(InitYAMLObject):
         )  # , add_prefix_space=True)
         self.args = args
         self.cache = cache
-        self.cache_writers = get_split_dictionary()
-        self.cache_tokens = get_split_dictionary()
-        self.cache_alignments = get_split_dictionary()
+        self.cache_writers = new_split_dictionary()
+        self.cache_tokens = new_split_dictionary()
+        self.cache_alignments = new_split_dictionary()
         self.cache_is_setup = False
 
     def levenshtein_matrix(self, string1, string2):

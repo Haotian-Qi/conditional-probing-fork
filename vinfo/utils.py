@@ -16,14 +16,14 @@ PTB_UNIVERSAL_CONVERSION_STRING = "ptb_to_upos"
 WSD_COARSENING_CONVERSION_STRING = "wsd_coarse"
 
 
-def get_split_dictionary(default_value=None):
+def new_split_dictionary(default_value=None):
     """
     Returns an initialized dictionary, with a key for each of the three data splits:
     `train`, `dev`, and `test`.
 
     The initialised value defaults to `None`.
     """
-    return {split: default_value for split in (TRAIN_STR, DEV_STR, TEST_STR)}
+    return {split: default_value for split in SPLITS}
 
 
 class InitYAMLObject(YAMLObject):
