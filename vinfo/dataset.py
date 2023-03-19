@@ -434,7 +434,12 @@ class HuggingfaceData(InitYAMLObject):
     def tensor_of_sentence(self, sentence, split):
         check_split(split)
 
-        readable, writable = self.caches[split].status
+        cache = self.caches[split]
+        readable, writable = cache.status()
+
+        if not (readable or writable) and self.wait_for_cache:
+            cache.lock.wait()
+
         # Cache is being read from
         if readable:
             tensors = self._read_from_cache(split, sentence)

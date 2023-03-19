@@ -44,6 +44,18 @@ class _CacheLock:
         else:
             self.acquired = False
 
+    def remove(self):
+        if os.path.exists(self.path):
+            os.remove(self.path)
+
+    def wait(self):
+        """
+        Waits for the file at cache lock path to be released, i.e. deleted.
+        """
+        print(f"Waiting for cache lock file at {self.path}")
+        while os.path.exists(self.path):
+            time.sleep(1)
+
 
 class WholeDatasetCache(InitYAMLObject):
     """
@@ -58,33 +70,22 @@ class WholeDatasetCache(InitYAMLObject):
         dataset_path,
         task_name,
         force_read_cache=False,
-        wait_for_cache=False,
     ):
         self.file = None
         self.dataset_path = dataset_path
         self.cache_path = self.get_cache_path(dataset_path, task_name)
         self.lock = _CacheLock(self.cache_path)
         self.force_read_cache = force_read_cache
-        self.wait_for_cache = wait_for_cache
 
     @staticmethod
     def _sanitize_task_name(task_name):
         return re.sub("[^A-Za-z0-9_-]", "_", task_name)
-
-    @staticmethod
-    def _wait_for_lock(lock_path):
-        """
-        Waits for the file at `lock_path` to be released, i.e. deleted.
-        """
-        while os.path.exists(lock_path):
-            time.sleep(1)
 
     @classmethod
     def get_cache_path(cls, dataset_path, task_name):
         task_name = cls._sanitize_task_name(task_name)
         return f"{dataset_path}.cache.{task_name}.hdf5"
 
-    @property
     def status(self):
         # Cache is locked by another process writing to it
         if not self.lock.available and not self.lock.acquired:
@@ -104,8 +105,9 @@ class WholeDatasetCache(InitYAMLObject):
             # Cache is older than data, so erase cache and write from scratch
             os.remove(self.cache_path)
             logging.info("Cache erased at: {}".format(self.cache_path))
-            if os.path.exists(self.lock_path):
-                os.remove(self.lock_path)
+
+            # Remove lock path
+            self.lock.remove()
             return False, True
 
         # Cache is valid, can be used for reading and writing
