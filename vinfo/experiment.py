@@ -62,7 +62,6 @@ def run_yaml_experiment(yaml_path, just_cache_data, do_test):
     probe_model = yaml_args["probe"]
     regimen_model = yaml_args["regimen"]
     reporter_model = yaml_args["reporter"]
-    cache_model = yaml_args["cache"]
 
     # Make results directory
     os.makedirs(regimen_model.reporting_root, exist_ok=True)
@@ -72,7 +71,6 @@ def run_yaml_experiment(yaml_path, just_cache_data, do_test):
     dev_dataloader = list_dataset.get_dev_dataloader(shuffle=False)
     if do_test:
         test_dataloader = list_dataset.get_test_dataloader(shuffle=False)
-    cache_model.release_locks()
 
     if just_cache_data:
         print("Data caching done. Exiting...")

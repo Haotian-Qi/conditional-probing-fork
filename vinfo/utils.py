@@ -2,7 +2,6 @@
 Utilities for determining file locations or names
 from the configuration specification
 """
-import logging
 
 from yaml import YAMLObject
 
@@ -26,19 +25,25 @@ def new_split_dictionary(default_value=None):
     return {split: default_value for split in SPLITS}
 
 
+def check_split(split):
+    """
+    Checks whether the string at `split` is a valid split,
+    i.e. only of `train`, `dev` and `test`.
+
+    Raises `ValueError` if not.
+    """
+    if split not in SPLITS:
+        raise ValueError("Unknown split string: {}".format(split))
+
+
 class InitYAMLObject(YAMLObject):
     @classmethod
     def from_yaml(cls, loader, node):
         """
         Convert a representation node to a Python object.
         """
-        logging.basicConfig(
-            format="%(asctime)s - %(message)s", datefmt="%d-%b-%y %H:%M:%S"
-        )
-        logging.warning(type(node))
-        print(node)
-        arg_dict = loader.construct_mapping(node, deep=True)
         print("Constructing", cls)
+        arg_dict = loader.construct_mapping(node, deep=True)
         return cls(**arg_dict)
 
 

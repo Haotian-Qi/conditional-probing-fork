@@ -1,5 +1,7 @@
-import h5py
+import hashlib
+
 import Levenshtein as levenshtein
+import numpy as np
 import torch
 from allennlp.modules.elmo import batch_to_ids
 from torch.utils.data import DataLoader, Dataset
@@ -7,10 +9,10 @@ from tqdm import tqdm
 from transformers import AutoTokenizer
 from utils import (
     DEV_STR,
-    SPLITS,
     TEST_STR,
     TRAIN_STR,
     InitYAMLObject,
+    check_split,
     new_split_dictionary,
 )
 from yaml import YAMLObject
@@ -27,17 +29,6 @@ Classes for loading, caching, and yielding text datasets
 #  tensors. For decoration/explanation only
 #  """
 #  yaml_tag = '!Dataset'
-
-
-def _huggingfacedata_generator(f, type):
-    """
-    Prevents issues with closures caused by passing more than one generator expression
-    in the same scope that share variables.
-    """
-    return (
-        torch.tensor(f[f"{i}{type}"][()])
-        for i in range(len(f.keys()))
-    )
 
 
 class IterableDatasetWrapper(Dataset):  # (IterableDataset):
@@ -116,6 +107,9 @@ class ListDataset(Dataset, InitYAMLObject):
                 input_tensors.append(dataset.tensor_of_sentence(sentence, split))
             output_tensor = self.output_dataset.tensor_of_sentence(sentence, split)
             yield (input_tensors, output_tensor, sentence)
+        for dataset in self.input_datasets:
+            if hasattr(dataset, "done"):
+                dataset.done()
 
     def collate_fn(self, observation_list):
         """
@@ -214,17 +208,13 @@ class HuggingfaceData(InitYAMLObject):
 
     yaml_tag = "!HuggingfaceData"
 
-    def __init__(self, args, model_string, cache=None, wait_for_cache=False):
-        print("Constructing HuggingfaceData of {}".format(model_string))
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            model_string
-        )  # , add_prefix_space=True)
+    def __init__(self, args, tokenizer_model_string, caches, wait_for_cache=False):
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_model_string)
         self.args = args
-        self.cache = cache
-        self.cache_writers = new_split_dictionary()
+        self.caches = caches
         self.cache_tokens = new_split_dictionary()
         self.cache_alignments = new_split_dictionary()
-        self.cache_is_setup = False
+        self.wait_for_cache = wait_for_cache
 
     def levenshtein_matrix(self, string1, string2):
         opcodes = levenshtein.opcodes(string1, string2)
@@ -372,77 +362,39 @@ class HuggingfaceData(InitYAMLObject):
             raw_string,
         )
 
-    def _setup_cache(self):
-        """
-        Constructs readers for caches that exist
-        and writers for caches that do not.
-        """
-        if self.cache is None or self.cache_is_setup:
-            return
+    @staticmethod
+    def _hash_sentence(sentence):
+        hasher = hashlib.md5()
+        for token in sentence:
+            for value in token:
+                hasher.update(str(value).encode("utf-8"))
+        return hasher.hexdigest()
 
-        # Check cache readable/writeable
-        for split in SPLITS:
-            path, readable, writable = self.cache.get_cache_path_and_check(
-                split, "hfacetokens"
-            )
+    def _read_from_cache(self, split, sentence):
+        check_split(split)
+        cache = self.caches[split]
+        cache.open()
+        cache.lock.acquire()
 
-            if not readable and not writable:
-                self.cache = None
-                print(
-                    f"Not using the cache, as {split} cache is neither readable nor writable."
-                )
-                return
+        sentence_hash = self._hash_sentence(sentence)
+        if sentence_hash not in self.caches[split]:
+            return None
 
-            if readable:
-                # Load from cache
-                f = h5py.File(path, "r")
-                self.cache_tokens[split] = _huggingfacedata_generator(f, "tok")
-                self.cache_alignments[split] = _huggingfacedata_generator(f, "aln")
-            elif writable:
-                # Setup writer
-                self.cache_writers[split] = self.cache.get_hdf5_cache_writer(path)
-                self.cache_tokens[split] = None
-                self.cache_alignments[split] = None
-            else:
-                # Should not reach here
-                raise ValueError(
-                    f"{split.title()} cache neither readable nor writeable"
-                )
-
-        self.cache_is_setup = True
-
-    def tensor_of_sentence(self, sentence, split):
-        self._setup_cache()
-        if split not in SPLITS:
-            raise ValueError("Unknown split: {}".format(split))
-
-        # Cache is not being used
-        if self.cache is None:
-            return self._tensor_of_sentence(sentence, split)
-
-        # Cache is being read from
-        if self.cache_tokens[split] is not None:
-            return next(self.cache_tokens[split]), next(self.cache_alignments[split])
-
-        # Get tensor of sentence, and write to cache
-        cache_writer = self.cache_writers[split]
-        wordpiece_indices, alignments = self._tensor_of_sentence(sentence, split)
-
-        tok_string_key = (
-            str(len(list(filter(lambda x: "tok" in x, cache_writer.keys())))) + "tok"
+        dataset = self.caches[split].read(sentence_hash)
+        return (
+            torch.tensor(np.array(dataset["tok"])),
+            torch.tensor(np.array(dataset["aln"])),
         )
-        tok_dset = cache_writer.create_dataset(tok_string_key, wordpiece_indices.shape)
-        tok_dset[:] = wordpiece_indices
 
-        aln_string_key = (
-            str(len(list(filter(lambda x: "aln" in x, cache_writer.keys())))) + "aln"
-        )
-        aln_dset = cache_writer.create_dataset(aln_string_key, alignments.shape)
-        aln_dset[:] = alignments
+    def _write_to_cache(self, split, sentence, wordpiece_indices, alignments):
+        check_split(split)
+        self.caches[split].open()
 
-        return wordpiece_indices, alignments
+        sentence_hash = self._hash_sentence(sentence)
+        self.caches[split].write(f"{sentence_hash}/tok", wordpiece_indices)
+        self.caches[split].write(f"{sentence_hash}/aln", alignments)
 
-    def _tensor_of_sentence(self, sentence, split):
+    def _calculate_tensor_of_sentence(self, sentence, split):
         alignment, wordpiece_strings, raw_string = self.hface_ontonotes_alignment(
             sentence
         )
@@ -473,10 +425,40 @@ class HuggingfaceData(InitYAMLObject):
                 wordpiece_alignment_vecs.append(torch.clone(wordpiece_alignment))
             wordpiece_indices.extend(new_wordpieces)
         # SEP token given by tokenizer
+
         wordpiece_indices = torch.tensor(self.tokenizer.encode(wordpiece_indices))
         wordpiece_alignment_vecs.append(torch.zeros(len(sentence)))
         wordpiece_alignment_vecs = torch.stack(wordpiece_alignment_vecs)
         return wordpiece_indices, wordpiece_alignment_vecs
+
+    def tensor_of_sentence(self, sentence, split):
+        check_split(split)
+
+        readable, writable = self.caches[split].status
+        # Cache is being read from
+        if readable:
+            tensors = self._read_from_cache(split, sentence)
+            if tensors is not None:
+                return tensors
+
+        # Either cache is readable but the sentence was not found,
+        # or cache is not readable
+
+        # Calculate tensors
+        wordpiece_indices, alignments = self._calculate_tensor_of_sentence(
+            sentence, split
+        )
+
+        # Cache is writable, so save tensors
+        if writable:
+            self.caches[split].lock.acquire()
+            self._write_to_cache(split, sentence, wordpiece_indices, alignments)
+
+        return wordpiece_indices, alignments
+
+    def done(self):
+        for cache in self.caches.values():
+            cache.lock.release()
 
 
 class AnnotationData(InitYAMLObject):
@@ -491,13 +473,13 @@ class AnnotationData(InitYAMLObject):
         self.task = task
         # self.task.setup_cache()
 
-    def tensor_of_sentence(self, sentence, split_string):
+    def tensor_of_sentence(self, sentence, split):
         """
         Converts from a tuple-formatted sentence (e.g, from conll-formatted data)
         to a Torch tensor of integers representing the annotation
         """
         alignment = torch.eye(len(sentence))
-        return self.task.labels_of_sentence(sentence, split_string), alignment
+        return self.task.labels_of_sentence(sentence, split), alignment
 
 
 class Loader(InitYAMLObject):
@@ -506,8 +488,6 @@ class Loader(InitYAMLObject):
     and yield sentence buffers for tokenization and labeling
     Strictly for description
     """
-
-    yaml_tag = "!Loader"
 
 
 class OntonotesReader(Loader):
@@ -518,12 +498,12 @@ class OntonotesReader(Loader):
 
     yaml_tag = "!OntonotesReader"
 
-    def __init__(self, args, train_path, dev_path, test_path, cache):
-        print("Constructing OntoNotesReader")
-        self.train_path = train_path
-        self.dev_path = dev_path
-        self.test_path = test_path
-        self.cache = cache
+    def __init__(self, train_path, dev_path, test_path):
+        self.paths = {
+            TRAIN_STR: train_path,
+            DEV_STR: dev_path,
+            TEST_STR: test_path,
+        }
 
     @staticmethod
     def sentence_lists_of_stream(ontonotes_stream):
@@ -549,22 +529,13 @@ class OntonotesReader(Loader):
         if buf:
             yield buf
 
-    def yield_dataset(self, split_string):
+    def yield_dataset(self, split):
         """
         Yield a list of attribute lines, given by ontonotes_fields,
         for each sentence in the training set of ontonotes
         """
-        path = (
-            self.train_path
-            if split_string == TRAIN_STR
-            else (
-                self.dev_path
-                if split_string == DEV_STR
-                else (self.test_path if split_string == TEST_STR else None)
-            )
-        )
-        if path is None:
-            raise ValueError("Unknown split string: {}".format(split_string))
+        check_split(split)
+        path = self.paths[split]
 
         with open(path) as fin:
             for sentence in OntonotesReader.sentence_lists_of_stream(fin):
@@ -579,12 +550,12 @@ class SST2Reader(Loader):
 
     yaml_tag = "!SST2Reader"
 
-    def __init__(self, args, train_path, dev_path, test_path, cache):
-        print("Constructing SST2Reader")
-        self.train_path = train_path
-        self.dev_path = dev_path
-        self.test_path = test_path
-        self.cache = cache
+    def __init__(self, train_path, dev_path, test_path):
+        self.paths = {
+            TRAIN_STR: train_path,
+            DEV_STR: dev_path,
+            TEST_STR: test_path,
+        }
 
     @staticmethod
     def sentence_lists_of_stream(sst2_stream):
@@ -606,22 +577,13 @@ class SST2Reader(Loader):
             label_tokens = [label_string for _ in word_tokens]
             yield list(zip(indices, word_tokens, label_tokens))
 
-    def yield_dataset(self, split_string):
+    def yield_dataset(self, split):
         """
         Yield a list of attribute lines, given by ontonotes_fields,
         for each sentence in the training set of ontonotes
         """
-        path = (
-            self.train_path
-            if split_string == TRAIN_STR
-            else (
-                self.dev_path
-                if split_string == DEV_STR
-                else (self.test_path if split_string == TEST_STR else None)
-            )
-        )
-        if path is None:
-            raise ValueError("Unknown split string: {}".format(split_string))
+        check_split(split)
+        path = self.paths[split]
 
         with open(path) as fin:
             for sentence in SST2Reader.sentence_lists_of_stream(fin):
