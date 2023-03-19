@@ -1,4 +1,4 @@
-input_fields: &id_input_fields
+input_fields: &input_fields
   - one_offset_word_index
   - token
   - lemma
@@ -21,23 +21,17 @@ input_fields: &id_input_fields
   - speaker_author
   - named_entities
 
-cache: &id_cache !WholeDatasetCache
-  train_path: &idtrainpath scripts/ontonotes_scripts/train.ontonotes.withdep.conll
-  dev_path: &iddevpath scripts/ontonotes_scripts/dev.ontonotes.withdep.conll
-  test_path: &idtestpath scripts/ontonotes_scripts/test.ontonotes.withdep.conll
-
-disk_reader: !OntonotesReader &id_disk_reader
+disk_reader: !OntonotesReader &disk_reader
   args: 
     - device: cuda:0
-  train_path: *idtrainpath 
-  dev_path: *iddevpath 
-  test_path: *idtestpath 
-  cache: *id_cache
+  train_path: &train_path data/train.ontonotes.withdep.conll
+  dev_path: &dev_path data/dev.ontonotes.withdep.conll
+  test_path: &test_path data/test.ontonotes.withdep.conll
 
 dataset: !ListDataset
   args: 
     device: cuda:0
-  data_loader: *id_disk_reader
+  data_loader: *disk_reader
   output_dataset: !AnnotationDataset
     args: 
       device: cuda:0
@@ -45,13 +39,23 @@ dataset: !ListDataset
       args: 
         device: cuda:0
       task_name: named_entities
-      input_fields: *id_input_fields
+      input_fields: *input_fields
   input_datasets:
     - !HuggingfaceData
       args:
         device: cuda:0
-      model_string: &model1string HaotianQi/12-768-en-distilbert
-      cache: *id_cache
+      tokenizer_model_string: google/bert_uncased_L-12_H-768_A-12
+      caches:
+        train: !WholeDatasetCache
+          dataset_path: *train_path
+          task_name: *tokenizer_model_string
+        dev: !WholeDatasetCache
+          dataset_path: *dev_path
+          task_name: *tokenizer_model_string
+        test: !WholeDatasetCache
+          dataset_path: *test_path
+          task_name: *tokenizer_model_string
+      wait_for_cache: true
 
 model: !ListModel
   args: 
@@ -60,7 +64,7 @@ model: !ListModel
     - !HuggingfaceModel
         args:
           device: cuda:0
-        model_string: *model1string
+        model_string: HaotianQi/12-768-en-distilbert
         trainable: False
         index: 3
     
@@ -75,12 +79,12 @@ regimen: !ProbeRegimen
     device: cuda:0
   max_epochs: 50
   params_path: params
-  reporting_root: &id_reporting_root configs/round1/named_entities/bert768/layer3.yaml.results
+  reporting_root: &reporting_root configs/named_entities/bert768/layer0.yaml.results
 
 reporter: !NERReporter
   args:
     device: cuda:0
-  reporting_root: *id_reporting_root
+  reporting_root: *reporting_root
   reporting_methods:
     - label_accuracy
     - v_entropy

@@ -5,7 +5,7 @@ TASKS=("dep_rel" "named_entities" "ptb_pos" "sst2" "upos" "word_sense")
 # Print help and exit
 help() {
 cat <<EOF
-Usage: $0 model_string layers
+Usage: $0 model_string layers [directory_name]
 
 Creates probing configs for the given model string for the tasks dep_rel, 
 named_entities, ptb_pos, sst2, upos and word_sense.
@@ -19,6 +19,7 @@ Parameters:
 
 model_string    the HuggingFace model string to use
 layers          the number of layers in the model
+[label_name]    (optional) the name to use instead of the model name
 
 Optional flags:
 
@@ -28,9 +29,31 @@ EOF
 exit 0
 }
 
-output_config () {
-    new_filename=$(echo $(basename $bert768_config_path) | sed "s/bert768/${model_name}/" -)
-    cat $bert768_config_path | sed "s,google/bert_uncased_L-12_H-768_A-12,$model_string,g" - > "${model_task_dir}/${new_filename}"
+output_baseline_config() {
+    template_filename="${task}-template-layer0.yaml"
+    template_file_path="${template_dir}/${template_filename}"
+    new_config_filename="${task}-${label_name}-layer${index}.yaml"
+    new_config_file_path="${model_task_dir}/${new_config_filename}"
+
+    cat $template_file_path \
+    | sed "s|<<tokenizer_model_string>>|${tokenizer_model_string}|g" \
+    | sed "s|<<model_string>>|${model_string}|g" - \
+    | sed "s|<<index>>|${layer}|g" \
+    > "${new_config_file_path}"
+}
+
+output_conditional_config() {
+    template_filename="${task}-template-layer0-0.yaml"
+    template_file_path="${template_dir}/${template_filename}"
+    new_config_filename="${task}-${label_name}-layer${index_1}-${index_2}.yaml"
+    new_config_file_path="${model_task_dir}/${new_config_filename}"
+
+    cat $template_file_path \
+    | sed "s|<<tokenizer_model_string>>|${tokenizer_model_string}|g" \
+    | sed "s|<<model_string>>|${model_string}|g" - \
+    | sed "s|<<index_1>>|${index_1}|g" \
+    | sed "s|<<index_2>>|${index_2}|g" \
+    > "${new_config_file_path}"
 }
 
 # Print help if no arguments or flags passed
@@ -70,26 +93,27 @@ if [[ $layers -gt 12 ]]; then
     >&2 echo "error: Number of layers ($layers) is greater than number of layers in bert768 (12)"
 fi
 
-model_name=$(echo "${model_string}" | cut -d '/' -f2)
+label_name=$(echo "${model_string}" | cut -d '/' -f2)
 
 for task in "${TASKS[@]}"; do
     # Set up paths
     task_dir="configs/${task}"
-    model_task_dir="${task_dir}/${model_name}"
-    bert768_task_dir="${task_dir}/bert768"
+    template_dir="${task_dir}/template"
+    model_task_dir="${task_dir}/${label_name}"
+    tokenizer_model_string="google/bert_uncased_L-12_H-768_A-12"
     mkdir -p "${model_task_dir}"
 
-    # Copy configs
-
+    ## Copy configs
     # Baseline
     for layer in $(seq 0 $layers); do
-        bert768_config_path=$bert768_task_dir/*layer$layer.yaml
-        output_config
+        index=$layer
+        output_baseline_config
     done
 
     # Conditional
     for layer in $(seq 1 $layers); do
-        bert768_config_path=$bert768_task_dir/*layer$layer-0.yaml
-        output_config
+        index_1=$layer
+        index_2=0
+        output_conditional_config
     done
 done

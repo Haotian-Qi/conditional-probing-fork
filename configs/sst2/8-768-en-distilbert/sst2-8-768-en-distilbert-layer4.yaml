@@ -1,25 +1,19 @@
-input_fields: &id_input_fields
+input_fields:
   - index
   - token
   - label
 
-cache: &id_cache !WholeDatasetCache
-  train_path: &idtrainpath data/sst2-train.tsv
-  dev_path: &iddevpath data/sst2-dev.tsv
-  test_path: &idtestpath data/sst2-test.tsv
-
-disk_reader: !SST2Reader &id_disk_reader
+disk_reader: !SST2Reader &disk_reader
   args: 
     - device: cuda:0
-  train_path: *idtrainpath 
-  dev_path: *iddevpath     
-  test_path: *idtestpath   
-  cache: *id_cache
+  train_path: &train_path scripts/sst2_scripts/SST-2/train.tsv
+  dev_path: &dev_path scripts/sst2_scripts/SST-2/dev.tsv
+  test_path: &test_path scripts/sst2_scripts/SST-2/test.tsv
 
 dataset: !ListDataset
   args: 
     device: cuda:0
-  data_loader: *id_disk_reader
+  data_loader: *disk_reader
   output_dataset: !AnnotationDataset
     args: 
       device: cuda:0
@@ -28,11 +22,21 @@ dataset: !ListDataset
         device: cuda:0
       task_name: SST
   input_datasets:
-        - !HuggingfaceData
-          args:
-            device: cuda:0
-          model_string: &model1string HaotianQi/8-768-en-distilbert
-          cache: *id_cache
+    - !HuggingfaceData
+      args:
+        device: cuda:0
+      tokenizer_model_string: google/bert_uncased_L-12_H-768_A-12
+      caches:
+        train: !WholeDatasetCache
+          dataset_path: *train_path
+          task_name: *tokenizer_model_string
+        dev: !WholeDatasetCache
+          dataset_path: *dev_path
+          task_name: *tokenizer_model_string
+        test: !WholeDatasetCache
+          dataset_path: *test_path
+          task_name: *tokenizer_model_string
+      wait_for_cache: true
 
 model: !ListModel
   args: 
@@ -41,7 +45,7 @@ model: !ListModel
    - !HuggingfaceModel
        args:
          device: cuda:0
-       model_string: *model1string
+       model_string: HaotianQi/8-768-en-distilbert
        trainable: False
        index: 4
     
@@ -56,12 +60,12 @@ regimen: !ProbeRegimen
     device: cuda:0
   max_epochs: 50
   params_path: params
-  reporting_root: &id_reporting_root configs/sst2/8-768-en-distilbert/layer4.yaml.results
+  reporting_root: &reporting_root configs/round1/sst2/bert768/layer0.yaml.results
 
 reporter: !IndependentLabelReporter
   args:
     device: cuda:0
-  reporting_root: *id_reporting_root
+  reporting_root: *reporting_root
   reporting_methods:
     - label_accuracy
     - v_entropy
