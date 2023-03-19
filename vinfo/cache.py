@@ -34,7 +34,7 @@ class _CacheLock:
     def release(self):
         if not self.acquired:
             return
-        if not self.available:
+        if self.available:
             print(f"Cache lock file at {self.path} was already released")
             self.acquired = False
             return
