@@ -22,8 +22,6 @@ input_fields: &input_fields
   - named_entities
 
 disk_reader: !OntonotesReader &disk_reader
-  args: 
-    - device: cuda:0
   train_path: &train_path scripts/ontonotes_scripts/train.ontonotes.withdep.conll
   dev_path: &dev_path scripts/ontonotes_scripts/dev.ontonotes.withdep.conll
   test_path: &test_path scripts/ontonotes_sc

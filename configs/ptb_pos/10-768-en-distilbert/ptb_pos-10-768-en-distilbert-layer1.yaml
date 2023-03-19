@@ -27,8 +27,6 @@ cache: &id_cache !WholeDatasetCache
   test_path: &test_path scripts/ontonotes_scripts/test.ontonotes.withdep.conll
 
 disk_reader: !OntonotesReader &disk_reader
-  args: 
-    - device: cuda:0
   train_path: *train_path 
   dev_path: *dev_path 
   test_path: *test_path 
