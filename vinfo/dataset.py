@@ -439,6 +439,7 @@ class HuggingfaceData(InitYAMLObject):
 
         if not (readable or writable) and self.wait_for_cache:
             cache.lock.wait()
+            return self.tensor_of_sentence(sentence, split)
 
         # Cache is being read from
         if readable:
