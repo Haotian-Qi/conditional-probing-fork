@@ -25,9 +25,9 @@ JOB_COMMAND_TEMPLATE = "python3 vinfo/experiment.py {config}"
 DATASET_PATH_REGEXES = {
     dataset: rf"(?<=\&id{dataset}path )(.*)" for dataset in ("dev", "train", "test")
 }
-REPORT_PATH_REGEX = r"(?<=\&id_reporting_root )(.*)"
+REPORT_PATH_REGEX = r"(?<=\&reporting_root )(.*)"
 TASK_NAME_REGEX = r"(?<=task_name: )(.*)"
-QOS_CONFIG_FILE = "#SBATCH --qos=gpu\n"
+QOS_CONFIG_LINE = "#SBATCH --qos=gpu\n"
 
 # Paths to datasets
 DATASET_PATHS = {
@@ -114,7 +114,7 @@ def write_submission_script(
         "<<main>>", JOB_COMMAND_TEMPLATE.format(config=config_file_path)
     )
     if use_dcs_gpu:
-        script_content = script_content.replace(QOS_CONFIG_FILE, "")
+        script_content = script_content.replace(QOS_CONFIG_LINE, "")
         script_content = script_content.replace("<<partition>>", "dcs-gpu")
         script_content = script_content.replace("<<account>>", "dcs-res")
     else:
