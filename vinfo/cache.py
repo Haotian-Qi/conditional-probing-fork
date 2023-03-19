@@ -36,6 +36,8 @@ class _CacheLock:
             return
         if not self.available:
             print(f"Cache lock file at {self.path} was already released")
+            self.acquired = False
+            return
         print(f"Releasing cache lock file at {self.path}")
         try:
             os.remove(self.path)
