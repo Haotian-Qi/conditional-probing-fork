@@ -1,3 +1,4 @@
+from abc import ABCMeta, abstractmethod
 import hashlib
 
 import Levenshtein as levenshtein
@@ -9,13 +10,14 @@ from tqdm import tqdm
 from transformers import AutoTokenizer
 from utils import (
     DEV_STR,
+    SPLITS,
     TEST_STR,
     TRAIN_STR,
     InitYAMLObject,
     check_split,
     new_split_dictionary,
 )
-from yaml import YAMLObject
+from yaml import YAMLObject, YAMLObjectMetaclass
 
 BATCH_SIZE = 50
 """
@@ -101,6 +103,8 @@ class ListDataset(Dataset, InitYAMLObject):
         Iterates through the training set once, passing each sentence to each
         input Dataset and the output Dataset
         """
+        for dataset in self.input_datasets:
+            dataset.before_load()
         for sentence in tqdm(self.data_loader.yield_dataset(split), desc="[loading]"):
             input_tensors = []
             for dataset in self.input_datasets:
@@ -108,8 +112,7 @@ class ListDataset(Dataset, InitYAMLObject):
             output_tensor = self.output_dataset.tensor_of_sentence(sentence, split)
             yield (input_tensors, output_tensor, sentence)
         for dataset in self.input_datasets:
-            if hasattr(dataset, "done"):
-                dataset.done()
+            dataset.after_load()
 
     def collate_fn(self, observation_list):
         """
@@ -179,7 +182,23 @@ class ListDataset(Dataset, InitYAMLObject):
         )
 
 
-class ELMoData(InitYAMLObject):
+class BaseDataMeta(ABCMeta, YAMLObjectMetaclass):
+    pass
+
+
+class BaseData(InitYAMLObject, metaclass=BaseDataMeta):
+    def before_load(self):
+        pass
+
+    @abstractmethod
+    def tensor_of_sentence(self, sentence, split):
+        pass
+
+    def after_load(self):
+        pass
+
+
+class ELMoData(BaseData):
     """
     Loading and serving minibatches of tokens to input to
     ELMo, as mediated by allennlp.
@@ -200,7 +219,7 @@ class ELMoData(InitYAMLObject):
         # for index, token in enumerate([x[1] for x in sentence]):
 
 
-class HuggingfaceData(InitYAMLObject):
+class HuggingfaceData(BaseData):
     """
     Loading and serving minibatches of tokens to input
     to a Huggingface-loaded model.
@@ -212,8 +231,7 @@ class HuggingfaceData(InitYAMLObject):
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_model_string)
         self.args = args
         self.caches = caches
-        self.cache_tokens = new_split_dictionary()
-        self.cache_alignments = new_split_dictionary()
+        self.cache_statuses = new_split_dictionary()
         self.wait_for_cache = wait_for_cache
 
     def levenshtein_matrix(self, string1, string2):
@@ -372,9 +390,6 @@ class HuggingfaceData(InitYAMLObject):
 
     def _read_from_cache(self, split, sentence):
         check_split(split)
-        cache = self.caches[split]
-        cache.open()
-        cache.lock.acquire()
 
         sentence_hash = self._hash_sentence(sentence)
         if sentence_hash not in self.caches[split]:
@@ -388,7 +403,6 @@ class HuggingfaceData(InitYAMLObject):
 
     def _write_to_cache(self, split, sentence, wordpiece_indices, alignments):
         check_split(split)
-        self.caches[split].open()
 
         sentence_hash = self._hash_sentence(sentence)
         self.caches[split].write(f"{sentence_hash}/tok", wordpiece_indices)
@@ -431,15 +445,22 @@ class HuggingfaceData(InitYAMLObject):
         wordpiece_alignment_vecs = torch.stack(wordpiece_alignment_vecs)
         return wordpiece_indices, wordpiece_alignment_vecs
 
+    def before_load(self):
+        for split in SPLITS:
+            cache = self.caches[split]
+            readable, writable = cache.status()
+            if readable:
+                if writable:
+                    cache.open("rw")
+                else:
+                    cache.open("r")
+            self.cache_statuses[split] = (readable, writable)
+
     def tensor_of_sentence(self, sentence, split):
         check_split(split)
 
         cache = self.caches[split]
-        readable, writable = cache.status()
-
-        if not (readable or writable) and self.wait_for_cache:
-            cache.lock.wait()
-            return self.tensor_of_sentence(sentence, split)
+        readable, writable = self.cache_statuses[split]
 
         # Cache is being read from
         if readable:
@@ -455,19 +476,24 @@ class HuggingfaceData(InitYAMLObject):
             sentence, split
         )
 
+        if not writable and self.wait_for_cache:
+            print(f"Waiting for cache write to finish at {cache.path}")
+            cache.lock.wait()
+            self.cache_statuses[split] = cache.status()
+            return self.tensor_of_sentence(sentence, split)
+
         # Cache is writable, so save tensors
         if writable:
-            self.caches[split].lock.acquire()
             self._write_to_cache(split, sentence, wordpiece_indices, alignments)
 
         return wordpiece_indices, alignments
 
-    def done(self):
+    def after_load(self):
         for cache in self.caches.values():
             cache.lock.release()
 
 
-class AnnotationData(InitYAMLObject):
+class AnnotationData(BaseData):
     """
     Loading and serving minibatches of data from annotations
     """
