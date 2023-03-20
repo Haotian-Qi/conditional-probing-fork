@@ -172,6 +172,11 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         ),
         action="store_true",
     )
+    parser.add_argument(
+        "--config-only",
+        help="If passed, then only outputs the .yaml config file.",
+        action="store_true",
+    )
 
     return parser, parser.parse_args()
 
@@ -188,6 +193,9 @@ def main() -> None:
     reporting_root, config_file_path = write_config_file(args.config, args.report)
     print(f"Report will be written to {reporting_root}")
     print(f"New .yaml file written to {config_file_path}")
+
+    if args.config_only:
+        return
 
     submission_script_path = write_submission_script(
         args.email, config_file_path, args.use_dcs_gpu
