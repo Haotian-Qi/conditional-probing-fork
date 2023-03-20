@@ -45,7 +45,7 @@ dataset: !ListDataset
     - !HuggingfaceData
       args:
         device: cuda:0
-      tokenizer_model_string: <<tokenizer_model_string>>
+      tokenizer_model_string: &tokenizer_model_string <<tokenizer_model_string>>
       caches:
         train: !WholeDatasetCache
           dataset_path: *train_path
