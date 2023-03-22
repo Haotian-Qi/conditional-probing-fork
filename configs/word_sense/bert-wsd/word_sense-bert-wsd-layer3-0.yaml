@@ -72,6 +72,7 @@ model: !ListModel
         args:
           device: cuda:0
         model_string: &model_string Artem1/bert-wsd
+        model_config_path: ./configs/word_sense/bert-wsd/config.json
         trainable: False
         index: 3
     - !HuggingfaceModel
