@@ -54,7 +54,7 @@ class HuggingfaceModel(nn.Module, InitYAMLObject):
 
     yaml_tag = "!HuggingfaceModel"
 
-    def __init__(self, args, model_string, trainable, index):
+    def __init__(self, args, model_string, trainable, index, model_config_path=None):
         """
         Arguments:
           args: The arguments dictionary
@@ -63,7 +63,8 @@ class HuggingfaceModel(nn.Module, InitYAMLObject):
         """
         super(HuggingfaceModel, self).__init__()
         self.huggingface_config = AutoConfig.from_pretrained(
-            model_string, output_hidden_states=True
+            model_string if model_config_path is None else model_config_path,
+            output_hidden_states=True,
         )
         self.huggingface_model = AutoModel.from_pretrained(
             model_string, config=self.huggingface_config
