@@ -44,16 +44,18 @@ dataset: !ListDataset
         device: cuda:0
       tokenizer_model_string: &tokenizer_model_string <<tokenizer_model_string>>
       caches:
-        train: !WholeDatasetCache
+        train: !HuggingfaceDataCache
           dataset_path: *train_path
           task_name: *tokenizer_model_string
-        dev: !WholeDatasetCache
+          wait_for_cache: true
+        dev: !HuggingfaceDataCache
           dataset_path: *dev_path
           task_name: *tokenizer_model_string
-        test: !WholeDatasetCache
+          wait_for_cache: true
+        test: !HuggingfaceDataCache
           dataset_path: *test_path
           task_name: *tokenizer_model_string
-      wait_for_cache: true
+          wait_for_cache: true
 
 model: !ListModel
   args: 

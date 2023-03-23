@@ -43,16 +43,16 @@ ontonotes_fields = [
 @click.command()
 @click.argument("yaml_path")
 @click.option(
-    "--just-cache-data",
-    default=0,
-    help="If 1, just writes data to cache; does not run experiment",
+    "--cache-data-only",
+    is_flag=True,
+    help="Writes data to cache and exits",
 )
 @click.option(
-    "--do_test",
-    default=0,
-    help="If 1, evaluates on the test set; hopefully just run this once!",
+    "--do-test",
+    is_flag=True,
+    help="Evaluates on the test set as well as train and development sets",
 )
-def run_yaml_experiment(yaml_path, just_cache_data, do_test):
+def run_yaml_experiment(yaml_path, cache_data_only, do_test):
     """
     Runs an experiment as configured by a yaml config file
     """
@@ -69,13 +69,17 @@ def run_yaml_experiment(yaml_path, just_cache_data, do_test):
     os.makedirs(regimen_model.reporting_root, exist_ok=True)
 
     # Make dataloaders and load data
-    train_dataloader = list_dataset.get_train_dataloader(shuffle=True)
-    dev_dataloader = list_dataset.get_dev_dataloader(shuffle=False)
-    if do_test:
-        test_dataloader = list_dataset.get_test_dataloader(shuffle=False)
+    list_dataset.before_load()
+    try:
+        train_dataloader = list_dataset.get_train_dataloader(shuffle=True)
+        dev_dataloader = list_dataset.get_dev_dataloader(shuffle=False)
+        if do_test:
+            test_dataloader = list_dataset.get_test_dataloader(shuffle=False)
+    finally:
+        list_dataset.after_load()
 
-    if just_cache_data:
-        print("Data caching done. Exiting...")
+    if cache_data_only:
+        print("Only caching datasets, exiting...")
         return
 
     # Train probe

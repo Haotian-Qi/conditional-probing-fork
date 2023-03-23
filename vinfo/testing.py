@@ -212,7 +212,7 @@ class TokenClassificationTaskTest(DataTest):
         train_path = self.tmpfile1.name
         dev_path = self.tmpfile2.name
         test_path = self.tmpfile3.name
-        cache_model = cache.WholeDatasetCache(train_path, dev_path, test_path)
+        cache_model = cache.HuggingfaceDataCache(train_path, dev_path, test_path)
 
         token_task = task.TokenClassificationTask(
             args, "Token", input_fields, cache_model
@@ -257,7 +257,7 @@ class TokenClassificationTaskTest(DataTest):
         test_path = self.tmpfile3.name
 
         # Write the cache
-        cache_model = cache.WholeDatasetCache(train_path, dev_path, test_path)
+        cache_model = cache.HuggingfaceDataCache(train_path, dev_path, test_path)
 
         token_task = task.TokenClassificationTask(
             args, "Token", input_fields, cache_model
@@ -280,7 +280,7 @@ class TokenClassificationTaskTest(DataTest):
         )
 
         # Use the cache
-        cache_model = cache.WholeDatasetCache(train_path, dev_path, test_path)
+        cache_model = cache.HuggingfaceDataCache(train_path, dev_path, test_path)
 
         # Assert the caches still exist
         self.assertTrue(os.path.exists(cache_model.get_cache_path(TRAIN_STR, "Token")))
@@ -353,7 +353,7 @@ class TestListDataset(DataTest):
         dev_path = self.tmpfile2.name
         test_path = self.tmpfile3.name
 
-        cache_model = cache.WholeDatasetCache(train_path, dev_path, test_path)
+        cache_model = cache.HuggingfaceDataCache(train_path, dev_path, test_path)
 
         data_reader = dataset.OntonotesReader(
             None, self.tmpfile1.name, None, None, None
@@ -393,7 +393,7 @@ class TestListDataset(DataTest):
         dev_path = self.tmpfile2.name
         test_path = self.tmpfile3.name
 
-        cache_model = cache.WholeDatasetCache(train_path, dev_path, test_path)
+        cache_model = cache.HuggingfaceDataCache(train_path, dev_path, test_path)
 
         data_reader = dataset.OntonotesReader(
             None, self.tmpfile1.name, None, None, None

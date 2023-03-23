@@ -1,5 +1,4 @@
 from abc import ABCMeta, abstractmethod
-import hashlib
 
 import Levenshtein as levenshtein
 import numpy as np
@@ -97,22 +96,31 @@ class ListDataset(Dataset, InitYAMLObject):
             collate_fn=self.collate_fn,
         )
 
+    def before_load(self):
+        for dataset in self.input_datasets:
+            dataset.before_load()
+
+    def after_load(self):
+        for dataset in self.input_datasets:
+            dataset.after_load()
+
     def load_data(self, split):
-        """Loads data from disk into RAM tensors for passing to a network on GPU
+        """
+        Loads data from disk into RAM tensors for passing to a network on GPU
 
         Iterates through the training set once, passing each sentence to each
         input Dataset and the output Dataset
         """
-        for dataset in self.input_datasets:
-            dataset.before_load()
-        for sentence in tqdm(self.data_loader.yield_dataset(split), desc="[loading]"):
+        for sentence in tqdm(
+            self.data_loader.yield_dataset(split),
+            desc="[loading data]",
+            unit="sentences",
+        ):
             input_tensors = []
             for dataset in self.input_datasets:
                 input_tensors.append(dataset.tensor_of_sentence(sentence, split))
             output_tensor = self.output_dataset.tensor_of_sentence(sentence, split)
             yield (input_tensors, output_tensor, sentence)
-        for dataset in self.input_datasets:
-            dataset.after_load()
 
     def collate_fn(self, observation_list):
         """
@@ -227,12 +235,10 @@ class HuggingfaceData(BaseData):
 
     yaml_tag = "!HuggingfaceData"
 
-    def __init__(self, args, tokenizer_model_string, caches, wait_for_cache=False):
+    def __init__(self, args, tokenizer_model_string, caches):
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_model_string)
         self.args = args
         self.caches = caches
-        self.cache_statuses = new_split_dictionary()
-        self.wait_for_cache = wait_for_cache
 
     def levenshtein_matrix(self, string1, string2):
         opcodes = levenshtein.opcodes(string1, string2)
@@ -380,34 +386,6 @@ class HuggingfaceData(BaseData):
             raw_string,
         )
 
-    @staticmethod
-    def _hash_sentence(sentence):
-        hasher = hashlib.md5()
-        for token in sentence:
-            for value in token:
-                hasher.update(str(value).encode("utf-8"))
-        return hasher.hexdigest()
-
-    def _read_from_cache(self, split, sentence):
-        check_split(split)
-
-        sentence_hash = self._hash_sentence(sentence)
-        if sentence_hash not in self.caches[split]:
-            return None
-
-        dataset = self.caches[split].read(sentence_hash)
-        return (
-            torch.tensor(np.array(dataset["tok"])),
-            torch.tensor(np.array(dataset["aln"])),
-        )
-
-    def _write_to_cache(self, split, sentence, wordpiece_indices, alignments):
-        check_split(split)
-
-        sentence_hash = self._hash_sentence(sentence)
-        self.caches[split].write(f"{sentence_hash}/tok", wordpiece_indices)
-        self.caches[split].write(f"{sentence_hash}/aln", alignments)
-
     def _calculate_tensor_of_sentence(self, sentence, split):
         alignment, wordpiece_strings, raw_string = self.hface_ontonotes_alignment(
             sentence
@@ -446,51 +424,28 @@ class HuggingfaceData(BaseData):
         return wordpiece_indices, wordpiece_alignment_vecs
 
     def before_load(self):
-        for split in SPLITS:
-            cache = self.caches[split]
-            readable, writable = cache.status()
-            if readable:
-                if writable:
-                    cache.open("rw")
-                else:
-                    cache.open("r")
-            self.cache_statuses[split] = (readable, writable)
+        for cache in self.caches.values():
+            cache.load()
 
     def tensor_of_sentence(self, sentence, split):
         check_split(split)
-
         cache = self.caches[split]
-        readable, writable = self.cache_statuses[split]
 
-        # Cache is being read from
-        if readable:
-            tensors = self._read_from_cache(split, sentence)
-            if tensors is not None:
-                return tensors
-
-        # Either cache is readable but the sentence was not found,
-        # or cache is not readable
+        # Check if sentence is in cache
+        tensors = cache.pop(sentence)
+        if tensors is not None:
+            return tensors
 
         # Calculate tensors
-        wordpiece_indices, alignments = self._calculate_tensor_of_sentence(
-            sentence, split
-        )
+        tensors = self._calculate_tensor_of_sentence(sentence, split)
 
-        if not writable and self.wait_for_cache:
-            print(f"Waiting for cache write to finish at {cache.path}")
-            cache.lock.wait()
-            self.cache_statuses[split] = cache.status()
-            return self.tensor_of_sentence(sentence, split)
-
-        # Cache is writable, so save tensors
-        if writable:
-            self._write_to_cache(split, sentence, wordpiece_indices, alignments)
-
-        return wordpiece_indices, alignments
+        # Write them to cache
+        cache.add(sentence, *tensors)
+        return tensors
 
     def after_load(self):
         for cache in self.caches.values():
-            cache.lock.release()
+            cache.close()
 
 
 class AnnotationData(BaseData):
