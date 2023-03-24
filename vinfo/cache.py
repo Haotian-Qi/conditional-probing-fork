@@ -164,7 +164,7 @@ class HuggingfaceDataCache(InitYAMLObject):
             ):
                 group = f.require_group(sentence_hash)
                 for part, tensor in self.data[sentence_hash].items():
-                    dataset = group.require_dataset(part, tensor.shape)
+                    dataset = group.create_dataset(part, tensor.shape)
                     dataset[:] = tensor
                     dataset.flush()
                 self.new_data_hashes.remove(sentence_hash)
