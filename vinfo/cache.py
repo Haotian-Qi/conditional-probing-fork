@@ -163,7 +163,10 @@ class HuggingfaceDataCache(InitYAMLObject):
                 desc="[writing cache]",
                 unit="sentences",
             ):
-                group = f.require_group(sentence_hash)
+                # Destroy any existing dataset
+                if sentence_hash in f:
+                    del f[sentence_hash]
+                group = f.create_group(sentence_hash)
                 for part, tensor in self.data[sentence_hash].items():
                     dataset = group.create_dataset(part, tensor.shape)
                     dataset[:] = tensor
@@ -174,6 +177,8 @@ class HuggingfaceDataCache(InitYAMLObject):
         """
         Writes all new cache data to cache.
         """
+        if not self.new_data_hashes:
+            return
         try:
             self.lock.acquire(blocking=self.wait_for_cache)
             self._flush()
