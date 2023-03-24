@@ -149,10 +149,10 @@ class HuggingfaceDataCache(InitYAMLObject):
         or `None` if it does not exist in the cache.
         """
         sentence_hash = self._hash_sentence(sentence)
-        dct = self.data.pop(sentence_hash, default)
+        dct = self.data.pop(sentence_hash, None)
         if dct is not None:
             return dct["tok"], dct["aln"]
-        return None
+        return default
 
     def _flush(self):
         Path(self.path).touch()
