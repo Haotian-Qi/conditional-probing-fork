@@ -29,6 +29,7 @@ class _CacheLock:
         if self.acquired:
             return
         if blocking:
+            print(f"Waiting for cache lock file at {self.path}")
             while not self.available:
                 pass
         else:
