@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import os
+import signal
+import sys
 
 import click
 import torch
@@ -16,28 +18,30 @@ from trainer import *
 from utils import *
 from utils import DEV_STR, TEST_STR, TRAIN_STR
 
-ontonotes_fields = [
-    "one_offset_word_index",
-    "token",
-    "None",
-    "ptb_pos",
-    "ptb_pos2",
-    "None2",
-    "dep_rel",
-    "None3",
-    "None4",
-    "source_file",
-    "part_number",
-    "zero_offset_word_index",
-    "token2",
-    "ptb_pos3",
-    "parse_bit",
-    "predicate_lemma",
-    "predicate_frameset_id",
-    "word_sense",
-    "speaker_author",
-    "named_entities",
-]
+
+class GracefulKill:
+    def __init__(self, callback):
+        self.callback = callback
+        self.kill_handled = False
+
+    def int_handler(self, signum, frame):
+        self.kill_handled = True
+        self.callback()
+        signal.default_int_handler(signum, frame)
+
+    def term_handler(self, signum, frame):
+        self.kill_handled = True
+        self.callback()
+        sys.exit(1)
+
+    def __enter__(self):
+        signal.signal(signal.SIGINT, self.int_handler)
+        signal.signal(signal.SIGTERM, self.term_handler)
+        return self
+
+    def __exit__(self, *args):
+        for s in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(s, signal.SIG_DFL)
 
 
 @click.command()
@@ -70,13 +74,16 @@ def run_yaml_experiment(yaml_path, cache_data_only, do_test):
 
     # Make dataloaders and load data
     list_dataset.before_load()
-    try:
-        train_dataloader = list_dataset.get_train_dataloader(shuffle=True)
-        dev_dataloader = list_dataset.get_dev_dataloader(shuffle=False)
-        if do_test:
-            test_dataloader = list_dataset.get_test_dataloader(shuffle=False)
-    finally:
-        list_dataset.after_load()
+
+    with GracefulKill(list_dataset.after_load) as g:
+        try:
+            train_dataloader = list_dataset.get_train_dataloader(shuffle=True)
+            dev_dataloader = list_dataset.get_dev_dataloader(shuffle=False)
+            if do_test:
+                test_dataloader = list_dataset.get_test_dataloader(shuffle=False)
+        finally:
+            if not g.kill_handled:
+                list_dataset.after_load()
 
     if cache_data_only:
         print("Only caching datasets, exiting...")
