@@ -15,6 +15,7 @@ from yaml import YAMLObject
 class _CacheLock:
     def __init__(self, cache_path):
         self.path = cache_path + ".lock"
+        self.file = None
         self.acquired = False
 
     @property
@@ -25,33 +26,38 @@ class _CacheLock:
         while not self.available:
             pass
 
-    def acquire(self, blocking=True):
-        if self.acquired:
-            return
+    def _block_for_acquire(self, blocking):
         if blocking:
             print(f"Waiting for cache lock file at {self.path}")
             while not self.available:
                 pass
+            return self.acquire(True)
         else:
-            raise RuntimeError("Lock file not available, and blocking turned off.")
+            raise RuntimeError("Lock file not available.")
+
+    def acquire(self, blocking=True):
+        if self.acquired:
+            return
+        if not self.available:
+            self._block_for_acquire(blocking)
         print(f"Acquiring cache lock file at {self.path}")
         try:
-            Path(self.path).touch()
+            self.file = open(self.path, "w")
         except OSError:
-            pass
+            return self._block_for_acquire(blocking)
         else:
             self.acquired = True
 
     def release(self):
-        if not self.acquired:
+        if not self.acquired or self.file is None:
             return
+
         print(f"Releasing cache lock file at {self.path}")
-        try:
-            self.remove()
-        except OSError:
-            pass
-        else:
-            self.acquired = False
+        self.file.close()
+        os.remove(self.path)
+        self.file = None
+
+        self.acquired = False
 
     def remove(self):
         if os.path.exists(self.path):
