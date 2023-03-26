@@ -54,7 +54,10 @@ class _CacheLock:
 
         print(f"Releasing cache lock file at {self.path}")
         self.file.close()
-        os.remove(self.path)
+        try:
+            os.remove(self.path)
+        except FileNotFoundError:
+            pass
         self.file = None
 
         self.acquired = False
