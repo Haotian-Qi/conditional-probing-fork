@@ -110,10 +110,17 @@ for task in "${TASKS[@]}"; do
         output_baseline_config
     done
 
-    # Conditional
+    # Conditional against embedding layer
     for layer in $(seq 1 $layers); do
         index_1=$layer
         index_2=0
+        output_conditional_config
+    done
+
+    # Adjacent conditional
+    for layer in $(seq 1 $(($layers - 1))); do
+        index_1=$layer
+        index_2=$(($layer + 1))
         output_conditional_config
     done
 done
