@@ -1,0 +1,101 @@
+input_fields: &input_fields
+  - one_offset_word_index
+  - token
+  - lemma
+  - upos
+  - ptb_pos
+  - None
+  - dep_head
+  - dep_rel
+  - None3
+  - None4
+  - source_file
+  - part_number
+  - zero_offset_word_index
+  - token2
+  - ptb_pos3
+  - parse_bit
+  - predicate_lemma
+  - predicate_frameset_id
+  - word_sense
+  - speaker_author
+  - named_entities
+
+disk_reader: !OntonotesReader &disk_reader
+  train_path: &train_path data/train.ontonotes.withdep.conll
+  dev_path: &dev_path data/dev.ontonotes.withdep.conll
+  test_path: &test_path data/test.ontonotes.withdep.conll
+
+dataset: !ListDataset
+  args: 
+    device: cuda:0
+  data_loader: *disk_reader
+  output_dataset: !AnnotationDataset
+    args: 
+      device: cuda:0
+    task: !TokenClassificationTask
+      args: 
+        device: cuda:0
+      task_name: upos
+      input_fields: *input_fields
+  input_datasets:
+    - !HuggingfaceData
+      args:
+        device: cuda:0
+      tokenizer_model_string: &tokenizer_model_string google/bert_uncased_L-12_H-768_A-12
+      caches: &caches
+        train: !HuggingfaceDataCache
+          dataset_path: *train_path
+          task_name: *tokenizer_model_string
+          wait_for_cache: true
+        dev: !HuggingfaceDataCache
+          dataset_path: *dev_path
+          task_name: *tokenizer_model_string
+          wait_for_cache: true
+        test: !HuggingfaceDataCache
+          dataset_path: *test_path
+          task_name: *tokenizer_model_string
+          wait_for_cache: true
+    - !HuggingfaceData
+      args:
+        device: cuda:0
+      tokenizer_model_string: *tokenizer_model_string
+      caches: *caches
+
+model: !ListModel
+  args: 
+    device: cuda:0
+  models:
+    - !HuggingfaceModel
+        args:
+          device: cuda:0
+        model_string: &model_string HaotianQi/12-b128-distilbert
+        trainable: False
+        index: 4
+    - !HuggingfaceModel
+        args:
+          device: cuda:0
+        model_string: *model_string
+        trainable: False
+        index: 5
+    
+probe: !OneWordLinearLabelProbe
+  args:
+    device: cuda:0
+  model_dim: 1536
+  label_space_size: 18
+
+regimen: !ProbeRegimen
+  args:
+    device: cuda:0
+  max_epochs: 50
+  params_path: params
+  reporting_root: &reporting_root configs/round1/upos/bert768/layer1-0.yaml.results
+
+reporter: !IndependentLabelReporter
+  args:
+    device: cuda:0
+  reporting_root: *reporting_root
+  reporting_methods:
+    - label_accuracy
+    - v_entropy

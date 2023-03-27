@@ -1,0 +1,73 @@
+input_fields:
+  - index
+  - token
+  - label
+
+disk_reader: !SST2Reader &disk_reader
+  args: 
+    - device: cuda:0
+  train_path: &train_path scripts/sst2_scripts/SST-2/train.tsv
+  dev_path: &dev_path scripts/sst2_scripts/SST-2/dev.tsv
+  test_path: &test_path scripts/sst2_scripts/SST-2/test.tsv
+
+dataset: !ListDataset
+  args: 
+    device: cuda:0
+  data_loader: *disk_reader
+  output_dataset: !AnnotationDataset
+    args: 
+      device: cuda:0
+    task: !SentenceClassificationTask
+      args: 
+        device: cuda:0
+      task_name: SST
+  input_datasets:
+    - !HuggingfaceData
+      args:
+        device: cuda:0
+      tokenizer_model_string: &tokenizer_model_string google/bert_uncased_L-12_H-768_A-12
+      caches:
+        train: !HuggingfaceDataCache
+          dataset_path: *train_path
+          task_name: *tokenizer_model_string
+          wait_for_cache: true
+        dev: !HuggingfaceDataCache
+          dataset_path: *dev_path
+          task_name: *tokenizer_model_string
+          wait_for_cache: true
+        test: !HuggingfaceDataCache
+          dataset_path: *test_path
+          task_name: *tokenizer_model_string
+          wait_for_cache: true
+
+model: !ListModel
+  args: 
+    device: cuda:0
+  models:
+   - !HuggingfaceModel
+       args:
+         device: cuda:0
+       model_string: HaotianQi/12-b128-distilbert
+       trainable: False
+       index: 10
+    
+probe: !SentenceLinearLabelProbe
+  args:
+    device: cuda:0
+  model_dim: 768
+  label_space_size: 3
+
+regimen: !ProbeRegimen
+  args:
+    device: cuda:0
+  max_epochs: 50
+  params_path: params
+  reporting_root: &reporting_root configs/round1/sst2/bert768/layer0.yaml.results
+
+reporter: !IndependentLabelReporter
+  args:
+    device: cuda:0
+  reporting_root: *reporting_root
+  reporting_methods:
+    - label_accuracy
+    - v_entropy
