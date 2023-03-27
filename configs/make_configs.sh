@@ -118,7 +118,7 @@ for task in "${TASKS[@]}"; do
     done
 
     # Adjacent conditional
-    for layer in $(seq 1 $(($layers - 1))); do
+    for layer in $(seq 0 $(($layers - 1))); do
         index_1=$layer
         index_2=$(($layer + 1))
         output_conditional_config
