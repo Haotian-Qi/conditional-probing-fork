@@ -59,7 +59,6 @@ class _CacheLock:
         except FileNotFoundError:
             pass
         self.file = None
-
         self.acquired = False
 
     def remove(self):
@@ -191,9 +190,8 @@ class HuggingfaceDataCache(InitYAMLObject):
         try:
             self.lock.acquire(blocking=self.wait_for_cache)
             self._flush()
-            return True
-        except RuntimeError:
-            return False
+        except OSError:
+            print(f"Could not open cache file {self.path}, skipping")
         finally:
             self.lock.release()
 
