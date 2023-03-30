@@ -42,7 +42,6 @@ dataset: !ListDataset
           device: cuda:0
         tokenizer_model_string: *tokenizer_model_string
         caches: *caches
-        wait_for_cache: true
 
 model: !ListModel
   args: 
