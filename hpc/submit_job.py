@@ -22,24 +22,8 @@ JOB_SCRIPT_TEMPLATE = os.path.join(
 JOB_COMMAND_TEMPLATE = "python3 vinfo/experiment.py {config}"
 
 # Regexes and patterns
-DATASET_PATH_REGEXES = {
-    dataset: rf"(?<=\&id{dataset}path )(.*)" for dataset in ("dev", "train", "test")
-}
 REPORT_PATH_REGEX = r"(?<=\&reporting_root )(.*)"
-TASK_NAME_REGEX = r"(?<=task_name: )(.*)"
 QOS_CONFIG_LINE = "#SBATCH --qos=gpu\n"
-
-# Paths to datasets
-DATASET_PATHS = {
-    "tsv": {
-        dataset: os.path.join(os.getcwd(), f"data/sst2-{dataset}.tsv")
-        for dataset in ("dev", "train", "test")
-    },
-    "conll": {
-        dataset: os.path.join(os.getcwd(), f"data/{dataset}.ontonotes.withdep.conll")
-        for dataset in ("dev", "train", "test")
-    },
-}
 
 
 def get_script_name(config_filename: str) -> str:
@@ -47,13 +31,6 @@ def get_script_name(config_filename: str) -> str:
     Returns a filename for a job script file based on the config file name
     """
     return config_filename.rsplit(".", maxsplit=1)[0] + ".sh"
-
-
-def get_task_name(config: str) -> str:
-    match = re.search(TASK_NAME_REGEX, config)
-    if match:
-        return match.group().lower()
-    return None
 
 
 def write_config_file(path: str, reports_dir: str) -> Tuple[str, str]:
@@ -69,20 +46,6 @@ def write_config_file(path: str, reports_dir: str) -> Tuple[str, str]:
 
     with open(path, "r") as f:
         config = f.read()
-
-    task_name = get_task_name(config)
-    if task_name in ("sst",):
-        file_type = "tsv"
-    else:
-        file_type = "conll"
-
-    for dataset in DATASET_PATH_REGEXES:
-        config = re.sub(
-            DATASET_PATH_REGEXES[dataset],
-            DATASET_PATHS[file_type][dataset],
-            config,
-            count=1,
-        )
 
     config_filename = os.path.basename(path)
     reporting_root = os.path.join(CURRENT_FILE_DIR, REPORTS_DIR, reports_dir)

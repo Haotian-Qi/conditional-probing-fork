@@ -4,9 +4,9 @@ input_fields:
   - label
 
 disk_reader: !SST2Reader &disk_reader
-  train_path: &train_path scripts/sst2_scripts/SST-2/train.tsv
-  dev_path: &dev_path scripts/sst2_scripts/SST-2/dev.tsv
-  test_path: &test_path scripts/sst2_scripts/SST-2/test.tsv
+  train_path: &train_path data/sst2-train.tsv
+  dev_path: &dev_path data/sst2-dev.tsv
+  test_path: &test_path data/sst2-test.tsv
 
 dataset: !ListDataset
   args: 
