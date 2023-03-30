@@ -42,7 +42,7 @@ dataset: !ListDataset
     - !HuggingfaceData
       args:
         device: cuda:0
-      model_string: &tokenizer_model_string google/bert_uncased_L-12_H-768_A-12
+      tokenizer_model_string: &tokenizer_model_string google/bert_uncased_L-12_H-768_A-12
       caches: &caches
         train: !HuggingfaceDataCache
           dataset_path: *train_path
