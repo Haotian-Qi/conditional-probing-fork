@@ -4,8 +4,6 @@ input_fields:
   - label
 
 disk_reader: !SST2Reader &disk_reader
-  args: 
-    - device: cuda:0
   train_path: &train_path scripts/sst2_scripts/SST-2/train.tsv
   dev_path: &dev_path scripts/sst2_scripts/SST-2/dev.tsv
   test_path: &test_path scripts/sst2_scripts/SST-2/test.tsv
