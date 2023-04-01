@@ -22,9 +22,9 @@ input_fields: &input_fields
   - named_entities
 
 disk_reader: !OntonotesReader &disk_reader
-  train_path: &train_path scripts/ontonotes_scripts/train.ontonotes.withdep.conll
-  dev_path: &dev_path scripts/ontonotes_scripts/dev.ontonotes.withdep.conll
-  test_path: &test_path scripts/ontonotes_sc
+  train_path: &train_path data/train.ontonotes.withdep.conll
+  dev_path: &dev_path data/dev.ontonotes.withdep.conll
+  test_path: &test_path data/test.ontonotes.withdep.conll
 
 dataset: !ListDataset
   args: 
@@ -60,7 +60,7 @@ dataset: !ListDataset
       args:
         device: cuda:0
       tokenizer_model_string: *tokenizer_model_string
-      cache: *caches
+      caches: *caches
 
 model: !ListModel
   args: 

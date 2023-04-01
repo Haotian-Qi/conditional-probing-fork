@@ -21,11 +21,6 @@ input_fields: &input_fields
   - speaker_author
   - named_entities
 
-cache: &id_cache !HuggingfaceDataCache
-  train_path: &train_path scripts/ontonotes_scripts/train.ontonotes.withdep.conll
-  dev_path: &dev_path scripts/ontonotes_scripts/dev.ontonotes.withdep.conll
-  test_path: &test_path scripts/ontonotes_scripts/test.ontonotes.withdep.conll
-
 disk_reader: !OntonotesReader &disk_reader
   train_path: *train_path 
   dev_path: *dev_path 
