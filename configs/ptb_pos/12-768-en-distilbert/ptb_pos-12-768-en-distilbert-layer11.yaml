@@ -22,10 +22,9 @@ input_fields: &input_fields
   - named_entities
 
 disk_reader: !OntonotesReader &disk_reader
-  train_path: *train_path 
-  dev_path: *dev_path 
-  test_path: *test_path 
-  cache: *id_cache
+  train_path: &train_path data/train.ontonotes.withdep.conll
+  dev_path: &dev_path data/dev.ontonotes.withdep.conll
+  test_path: &test_path data/test.ontonotes.withdep.conll
 
 dataset: !ListDataset
   args: 
