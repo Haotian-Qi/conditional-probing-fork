@@ -71,13 +71,13 @@ model: !ListModel
           device: cuda:0
         model_string: &model_string google/bert_uncased_L-12_H-768_A-12
         trainable: False
-        index: 2
+        index: 7
     - !HuggingfaceModel
         args:
           device: cuda:0
         model_string: *model_string
         trainable: False
-        index: 0
+        index: 6
 
 probe: !OneWordLinearLabelProbe
   args:

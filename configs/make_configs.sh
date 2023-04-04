@@ -81,19 +81,24 @@ for arg; do
 done
 
 # Check number of arguments
-if [[ ${#params[@]} -ne 2 ]]; then
-    >&2 echo "error: too many arguments, expected 2"
+if [[ ${#params[@]} -ne 3 ]]; then
+    >&2 echo "error: too many arguments, expected 2 or 3"
 fi
 
 model_string="${params[0]}"
 layers="${params[1]}"
+
+if [[ ${#params[@]} -gt 2 ]]; then
+    label_name="${params[2]}"
+else
+    label_name=$(echo "${model_string}" | cut -d '/' -f2)
+fi
 
 # Check number of layers
 if [[ $layers -gt 12 ]]; then
     >&2 echo "error: Number of layers ($layers) is greater than number of layers in bert768 (12)"
 fi
 
-label_name=$(echo "${model_string}" | cut -d '/' -f2)
 
 for task in "${TASKS[@]}"; do
     # Set up paths
@@ -119,8 +124,8 @@ for task in "${TASKS[@]}"; do
 
     # Adjacent conditional
     for layer in $(seq 0 $(($layers - 1))); do
-        index_1=$layer
-        index_2=$(($layer + 1))
+        index_1=$(($layer + 1))
+        index_2=$layer
         output_conditional_config
     done
 done

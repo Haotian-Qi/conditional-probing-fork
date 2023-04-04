@@ -27,16 +27,16 @@ disk_reader: !OntonotesReader &disk_reader
   test_path: &test_path data/test.ontonotes.withdep.conll
 
 dataset: !ListDataset
-  args:
+  args: 
     device: cuda:0
   data_loader: *disk_reader
   output_dataset: !AnnotationDataset
-    args:
+    args: 
       device: cuda:0
     task: !TokenClassificationTask
-      args:
+      args: 
         device: cuda:0
-      task_name: ptb_pos
+      task_name: upos
       input_fields: *input_fields
   input_datasets:
     - !HuggingfaceData
@@ -63,7 +63,7 @@ dataset: !ListDataset
       caches: *caches
 
 model: !ListModel
-  args:
+  args: 
     device: cuda:0
   models:
     - !HuggingfaceModel
@@ -71,26 +71,26 @@ model: !ListModel
           device: cuda:0
         model_string: &model_string google/bert_uncased_L-12_H-768_A-12
         trainable: False
-        index: 2
+        index: 12
     - !HuggingfaceModel
         args:
           device: cuda:0
         model_string: *model_string
         trainable: False
-        index: 0
-
+        index: 11
+    
 probe: !OneWordLinearLabelProbe
   args:
     device: cuda:0
   model_dim: 1536
-  label_space_size: 50
+  label_space_size: 18
 
 regimen: !ProbeRegimen
   args:
     device: cuda:0
   max_epochs: 50
   params_path: params
-  reporting_root: &reporting_root configs/round1/ptb_pos/bert768/layer1-0.yaml.results
+  reporting_root: &reporting_root configs/round1/upos/bert768/layer1-0.yaml.results
 
 reporter: !IndependentLabelReporter
   args:
