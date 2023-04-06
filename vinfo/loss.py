@@ -2,7 +2,6 @@
 
 import torch
 import torch.nn as nn
-from tqdm import tqdm
 
 
 class CustomCrossEntropyLoss(nn.Module):
@@ -10,7 +9,6 @@ class CustomCrossEntropyLoss(nn.Module):
 
     def __init__(self, args):
         super(CustomCrossEntropyLoss, self).__init__()
-        tqdm.write("Constructing CrossEntropyLoss")
         self.args = args
         self.pytorch_ce_loss = torch.nn.CrossEntropyLoss(
             ignore_index=0, reduction="sum"

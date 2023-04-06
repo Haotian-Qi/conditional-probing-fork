@@ -27,7 +27,6 @@ class OneWordLinearLabelProbe(Probe):
     yaml_tag = "!OneWordLinearLabelProbe"
 
     def __init__(self, args, model_dim, label_space_size, zero_features=False):
-        print("Constructing OneWordLinearLabelProbe")
         super(OneWordLinearLabelProbe, self).__init__()
         self.args = args
         self.model_dim = model_dim
@@ -71,7 +70,6 @@ class OneWordMLPLabelProbe(Probe):
     yaml_tag = "!OneWordMLPLabelProbe"
 
     def __init__(self, args, model_dim, label_space_size, zero_features=False):
-        print("Constructing OneWordLinearLabelProbe")
         super(OneWordMLPLabelProbe, self).__init__()
         self.args = args
         self.model_dim = model_dim
@@ -115,7 +113,6 @@ class SentenceLinearLabelProbe(Probe):
     yaml_tag = "!SentenceLinearLabelProbe"
 
     def __init__(self, args, model_dim, label_space_size, zero_features=False):
-        print("Constructing SentenceLinearLabelProbe")
         super(SentenceLinearLabelProbe, self).__init__()
         self.args = args
         self.model_dim = model_dim
@@ -157,7 +154,6 @@ class SentenceMLPLabelProbe(Probe):
     yaml_tag = "!SentenceMLPLabelProbe"
 
     def __init__(self, args, model_dim, label_space_size, zero_features=False):
-        print("Constructing SentenceLinearLabelProbe")
         super(SentenceMLPLabelProbe, self).__init__()
         self.args = args
         self.model_dim = model_dim
@@ -197,7 +193,6 @@ class TwoWordPSDProbe(Probe):
     yaml_tag = "!TwoWordPSDProbe"
 
     def __init__(self, args, model_dim, label_space_size):
-        print("Constructing TwoWordPSDProbe")
         super(TwoWordPSDProbe, self).__init__()
         self.args = args
         self.label_space_size = label_space_size
@@ -236,7 +231,6 @@ class OneWordPSDProbe(Probe):
     yaml_tag = "!OneWordPSDProbe"
 
     def __init__(self, args, model_dim, label_space_size):
-        print("Constructing OneWordPSDProbe")
         super(OneWordPSDProbe, self).__init__()
         self.args = args
         self.label_space_size = label_space_size
