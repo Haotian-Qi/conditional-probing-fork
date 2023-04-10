@@ -71,13 +71,13 @@ model: !ListModel
           device: cuda:0
         model_string: &model_string distilbert-base-uncased
         trainable: False
-        index: 4
+        index: 5
     - !HuggingfaceModel
         args:
           device: cuda:0
         model_string: *model_string
         trainable: False
-        index: 0
+        index: 6
 
 probe: !OneWordLinearLabelProbe
   args:

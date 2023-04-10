@@ -77,7 +77,7 @@ model: !ListModel
           device: cuda:0
         model_string: *model_string
         trainable: False
-        index: 0
+        index: 5
 
 probe: !OneWordLinearLabelProbe
   args:
