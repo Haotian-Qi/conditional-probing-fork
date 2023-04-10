@@ -81,7 +81,7 @@ for arg; do
 done
 
 # Check number of arguments
-if [[ ${#params[@]} -ne 3 ]]; then
+if [[ ${#params[@]} -gt 3 ]]; then
     >&2 echo "error: too many arguments, expected 2 or 3"
 fi
 
@@ -124,8 +124,8 @@ for task in "${TASKS[@]}"; do
 
     # Adjacent conditional
     for layer in $(seq 0 $(($layers - 1))); do
-        index_1=$(($layer + 1))
-        index_2=$layer
+        index_1=$layer
+        index_2=$(($layer + 1))
         output_conditional_config
     done
 done
