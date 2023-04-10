@@ -177,7 +177,7 @@ def main() -> None:
         args.email, config_file_path, args.use_dcs_gpu
     )
     print(f"I: New submission file written {submission_script_path}")
-    print(f"{SUBMIT_COMMAND}: ")
+    print(f"{SUBMIT_COMMAND}: ", end="")
     submit_job(submission_script_path)
 
 
