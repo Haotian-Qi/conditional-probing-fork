@@ -3,10 +3,11 @@
 import argparse
 import os
 import re
-from typing import Tuple
+from typing import Optional, Tuple
 
-# Obtains cluster name via environment
+# HPC commands
 CLUSTER = "bessemer" if os.environ.get("SGE_CLUSTER_NAME") is None else "sharc"
+SUBMIT_COMMAND = "sbatch" if CLUSTER == "bessemer" else "qsub"
 
 # Directories
 REPORTS_DIR = "reports"
@@ -33,25 +34,36 @@ def get_script_name(config_filename: str) -> str:
     return config_filename.rsplit(".", maxsplit=1)[0] + ".sh"
 
 
-def write_config_file(path: str, reports_dir: str) -> Tuple[str, str]:
+def write_config_file(
+    input_path: str,
+    output_config_filename: Optional[str] = None,
+) -> Tuple[str, str]:
     """
     Writes a config `.yaml` file in preparation for HPC job submission.
 
     Returns a tuple of the path where the report will be written,
     and the path to the config file generated.
     """
-    abs_config_dir = os.path.join(CURRENT_FILE_DIR, CONFIGS_DIR)
-    if not os.path.exists(abs_config_dir):
-        os.makedirs(abs_config_dir)
+    abs_output_config_dir = os.path.join(CURRENT_FILE_DIR, CONFIGS_DIR)
+    if not os.path.exists(abs_output_config_dir):
+        os.makedirs(abs_output_config_dir)
 
-    with open(path, "r") as f:
+    with open(input_path, "r") as f:
         config = f.read()
 
-    config_filename = os.path.basename(path)
-    reporting_root = os.path.join(CURRENT_FILE_DIR, REPORTS_DIR, reports_dir)
+    input_config_filename = os.path.basename(input_path)
+    if output_config_filename is None:
+        output_config_filename = input_config_filename
+    else:
+        output_config_filename = output_config_filename.replace(
+            "%c", input_config_filename.split(".", maxsplit=1)[0]
+        )
+    report_dirname = f"{output_config_filename}.results"
+
+    reporting_root = os.path.join(CURRENT_FILE_DIR, REPORTS_DIR, report_dirname)
     config = re.sub(REPORT_PATH_REGEX, reporting_root, config, count=1)
 
-    new_config_file_path = os.path.join(abs_config_dir, config_filename)
+    new_config_file_path = os.path.join(abs_output_config_dir, output_config_filename)
     with open(new_config_file_path, "w+") as f:
         f.write(config)
 
@@ -105,10 +117,7 @@ def get_email():
 
 
 def submit_job(script_path: str):
-    if CLUSTER == "sharc":
-        os.system(f"qsub {script_path}")
-    else:
-        os.system(f"sbatch {script_path}")
+    os.system(f"{SUBMIT_COMMAND} {script_path}")
 
 
 def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
@@ -121,17 +130,19 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         default=get_email(),
     )
     parser.add_argument(
-        "-r",
-        "--report",
+        "-o",
+        "--output-config",
         help=(
-            "The name of the directory to store reports in. "
-            "Defaults to <config-filename>.results"
+            "Override the output config filename. "
+            "By default, the name is the same as the config template passed. "
+            "%%c will be replaced with the name of the config file without extension."
         ),
     )
     parser.add_argument(
         "--use-dcs-gpu",
         help=(
-            "Whether or not to use the DCS GPU nodes. Throws error if not on Bessemer."
+            "Whether or not to use the DCS GPU nodes. "
+            "Raises an error if not on Bessemer."
         ),
         action="store_true",
     )
@@ -147,15 +158,17 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
 def main() -> None:
     parser, args = parse_args()
     if args.email is None:
-        parser.error("Email address not found. Create 'email' file, or pass -e flag")
-    if args.use_dcs_gpu and not CLUSTER == "bessemer":
+        parser.error(
+            "Email address not found. Create 'email' file, or pass -e flag with email"
+        )
+    if args.use_dcs_gpu and CLUSTER != "bessemer":
         parser.error("DCS GPU nodes are only available on Bessemer")
 
-    if args.report is None:
-        args.report = f"{os.path.basename(args.config)}.results"
-    reporting_root, config_file_path = write_config_file(args.config, args.report)
-    print(f"Report will be written to {reporting_root}")
-    print(f"New .yaml file written to {config_file_path}")
+    reporting_root, config_file_path = write_config_file(
+        args.config, args.output_config
+    )
+    print(f"I: Results will be written to {reporting_root}")
+    print(f"I: Config file written to {config_file_path}")
 
     if args.config_only:
         return
@@ -163,8 +176,8 @@ def main() -> None:
     submission_script_path = write_submission_script(
         args.email, config_file_path, args.use_dcs_gpu
     )
-    print(f"New submission file written {submission_script_path}")
-
+    print(f"I: New submission file written {submission_script_path}")
+    print(f"{SUBMIT_COMMAND}: ")
     submit_job(submission_script_path)
 
 
