@@ -90,7 +90,7 @@ regimen: !ProbeRegimen
     device: cuda:0
   max_epochs: 50
   params_path: params
-  reporting_root: &reporting_root configs/dep_rel/bert768/layer1-0.yaml.results
+  reporting_root: &reporting_root
 
 reporter: !IndependentLabelReporter
   args:

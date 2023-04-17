@@ -82,7 +82,7 @@ regimen: !ProbeRegimen
     device: cuda:0
   max_epochs: 50
   params_path: params
-  reporting_root: &reporting_root configs/round1/word_sense/roberta768/layer0.yaml.results
+  reporting_root: &reporting_root
 
 reporter: !IndependentLabelReporter
   args:

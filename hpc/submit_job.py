@@ -2,7 +2,6 @@
 
 import argparse
 import os
-import re
 from typing import Optional, Tuple
 
 # HPC commands
@@ -23,7 +22,7 @@ JOB_SCRIPT_TEMPLATE = os.path.join(
 JOB_COMMAND_TEMPLATE = "python3 vinfo/experiment.py {config}"
 
 # Regexes and patterns
-REPORT_PATH_REGEX = r"(?<=\&reporting_root )(.*)"
+REPORT_PATH_TAG = "&reporting_root"
 QOS_CONFIG_LINE = "#SBATCH --qos=gpu\n"
 
 
@@ -61,7 +60,7 @@ def write_config_file(
     report_dirname = f"{output_config_filename}.results"
 
     reporting_root = os.path.join(CURRENT_FILE_DIR, REPORTS_DIR, report_dirname)
-    config = re.sub(REPORT_PATH_REGEX, reporting_root, config, count=1)
+    config = config.replace(REPORT_PATH_TAG, f"{REPORT_PATH_TAG} {reporting_root}", 1)
 
     new_config_file_path = os.path.join(abs_output_config_dir, output_config_filename)
     with open(new_config_file_path, "w+") as f:
